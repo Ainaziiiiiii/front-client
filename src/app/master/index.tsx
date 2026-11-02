@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, Image, Pressable, Text, View } from 'react-native'
+import { FlatList, Pressable, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { Redirect, router } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import { EmptyState, QueryErrorBanner, Screen, ServiceIcon } from '@/components/ui'

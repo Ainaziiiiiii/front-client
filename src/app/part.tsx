@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Image, Pressable, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native'
+import { Pressable, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { PhotoPlaceholder, QueryErrorBanner } from '@/components/ui'
@@ -72,7 +73,7 @@ export default function PartScreen() {
 						onMomentumScrollEnd={(e) => setPhotoIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
 					>
 						{photos.map((photo) => (
-							<Image key={photo.id} source={{ uri: resolveUrl(photo.url) }} style={{ width, height: 320 }} resizeMode="cover" />
+							<Image key={photo.id} source={{ uri: resolveUrl(photo.url) }} style={{ width, height: 320 }} contentFit="cover" />
 						))}
 					</ScrollView>
 				) : part?.video?.posterUrl ? (
@@ -83,7 +84,7 @@ export default function PartScreen() {
 							router.push('/videos')
 						}}
 					>
-						<Image source={{ uri: resolveUrl(part.video.posterUrl) }} style={{ width, height: 320 }} resizeMode="cover" />
+						<Image source={{ uri: resolveUrl(part.video.posterUrl) }} style={{ width, height: 320 }} contentFit="cover" />
 						<View style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
 							<View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
 								<PlayIcon size={26} />

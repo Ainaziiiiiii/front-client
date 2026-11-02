@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { Image, Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { CameraView, useCameraPermissions } from 'expo-camera'

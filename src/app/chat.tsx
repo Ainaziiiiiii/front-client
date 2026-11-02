@@ -1,4 +1,5 @@
-import { Image, Linking, Pressable, Text, View } from 'react-native'
+import { Linking, Pressable, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ChatConversation, presenceLabel } from '@/components/chat-conversation'
 import { BackIcon, BoxOutlineIcon, CallIcon, WrenchIcon } from '@/components/buyer-v23'

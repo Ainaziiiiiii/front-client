@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Image, Linking, Pressable, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native'
+import { Linking, Pressable, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { LocationCard, QueryErrorBanner } from '@/components/ui'
@@ -66,7 +67,7 @@ export default function SellerProfileForBuyerScreen() {
 				<View>
 					{/* One banner — the box's first photo; no gallery. */}
 					{banner ? (
-						<Image source={{ uri: resolveUrl(banner.url) }} style={{ width, height: 210 }} resizeMode="cover" />
+						<Image source={{ uri: resolveUrl(banner.url) }} style={{ width, height: 210 }} contentFit="cover" />
 					) : (
 						<View style={{ width: '100%', height: 210, backgroundColor: raw.fill }} />
 					)}

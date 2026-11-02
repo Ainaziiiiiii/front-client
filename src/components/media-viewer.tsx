@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Image, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
+import { Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { CloseIcon } from '@/components/icons'
@@ -33,7 +34,7 @@ export function MediaViewer({ items, onClose }: { items: MediaItem[] | null; onC
 								// Only the visible one is mounted, so a swiped-away video stops.
 								i === index ? <VideoSlide url={item.url} width={width} /> : null
 							) : (
-								<Image source={{ uri: resolveUrl(item.url) }} resizeMode="contain" style={{ width, height: height * 0.8 }} />
+								<Image source={{ uri: resolveUrl(item.url) }} contentFit="contain" style={{ width, height: height * 0.8 }} />
 							)}
 						</View>
 					))}

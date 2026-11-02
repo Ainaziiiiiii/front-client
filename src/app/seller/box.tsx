@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Linking, Platform, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native'
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Linking, Platform, Pressable, Text, TextInput, View, useWindowDimensions } from 'react-native'
+import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { API_URL } from '@/lib/env'
 import Svg, { Path } from 'react-native-svg'

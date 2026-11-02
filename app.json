@@ -97,7 +97,8 @@
           "cameraPermission": "Сфотографируйте или снимите видео запчасти, чтобы показать продавцу или покупателям.",
           "microphonePermission": "Запишите видео запчасти со звуком."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

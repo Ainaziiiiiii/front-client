@@ -1,4 +1,5 @@
-import { FlatList, Image, Pressable, Text, View } from 'react-native'
+import { FlatList, Pressable, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Avatar, EmptyState, QueryErrorBanner, Screen } from '@/components/ui'
 import { ChatIcon } from '@/components/icons'

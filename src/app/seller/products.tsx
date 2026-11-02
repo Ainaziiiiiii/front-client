@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
+import { FlatList, Pressable, Text, TextInput, View } from 'react-native'
+import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Badge, PhotoPlaceholder, QueryErrorBanner, Screen } from '@/components/ui'
 import { BrandLogo } from '@/components/ui/brand'

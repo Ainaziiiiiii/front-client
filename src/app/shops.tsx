@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { BackIcon } from '@/components/buyer-v23'

@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ActivityIndicator, Image, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { BottomSheet, QueryErrorBanner } from '@/components/ui'

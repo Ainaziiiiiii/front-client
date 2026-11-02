@@ -1,4 +1,5 @@
-import { Image, Pressable, Text, View, type ImageSourcePropType } from 'react-native'
+import { Pressable, Text, View, type ImageSourcePropType } from 'react-native'
+import { Image } from 'expo-image'
 import { logos } from '@/data/brands'
 import { resolveUrl } from '@/lib/api'
 import { fontFamily, useColors } from '@/theme'
@@ -37,7 +38,7 @@ export function BrandLogo({ brand: input, size = 36 }: { brand: BrandLike; size?
 			}}
 		>
 			{brand.logo ? (
-				<Image source={brand.logo} resizeMode="contain" style={{ width: size * 0.7, height: size * 0.7 }} />
+				<Image source={brand.logo} contentFit="contain" style={{ width: size * 0.7, height: size * 0.7 }} />
 			) : (
 				<Text
 					style={{

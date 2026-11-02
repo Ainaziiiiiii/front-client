@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Pressable, Share, Text, View, type ViewToken } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, Share, Text, View, type ViewToken } from 'react-native'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router, useIsFocused } from 'expo-router'
@@ -194,7 +195,7 @@ function FeedPage({
 
 	return (
 		<View style={{ height, backgroundColor: '#000000' }}>
-			{poster ? <Image source={{ uri: poster }} resizeMode="cover" style={{ position: 'absolute', width: '100%', height: '100%' }} /> : null}
+			{poster ? <Image source={{ uri: poster }} contentFit="cover" style={{ position: 'absolute', width: '100%', height: '100%' }} /> : null}
 			{near ? <FeedVideo url={item.video.url} active={active} muted={muted} durationSec={item.video.durationSec} bottom={bottom} /> : null}
 			<LinearGradient
 				colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.85)']}
