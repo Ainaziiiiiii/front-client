@@ -54,11 +54,14 @@ if (Platform.OS !== 'web') {
 			options: { opensAppToForeground: false },
 		},
 		{ identifier: 'NOT_HAVE', buttonTitle: t('Нет'), options: { opensAppToForeground: false } },
+		{ identifier: 'VOICE', buttonTitle: t('Ответить голосом'), options: { opensAppToForeground: true } },
 	]).catch(() => {})
 	// «Могу помочь / Не моё» on a new service request [39]: «Не моё» answers in the background.
+	// «Ответить голосом» on both opens the answer screen with the recording already running.
 	Notifications.setNotificationCategoryAsync('NEW_SERVICE_REQUEST', [
 		{ identifier: 'CAN_HELP', buttonTitle: t('Могу помочь'), options: { opensAppToForeground: true } },
 		{ identifier: 'NOT_MINE', buttonTitle: t('Не моё'), options: { opensAppToForeground: false } },
+		{ identifier: 'VOICE', buttonTitle: t('Ответить голосом'), options: { opensAppToForeground: true } },
 	]).catch(() => {})
 }
 
@@ -230,6 +233,11 @@ async function handleResponse(response: Notifications.NotificationResponse) {
 			idempotencyKey: `push-${response.notification.request.identifier}`,
 		}).catch(() => {})
 		return
+	}
+	if (response.actionIdentifier === 'VOICE' && data.requestId) {
+		return data.type === 'NEW_SERVICE_REQUEST'
+			? router.push({ pathname: '/master-answer', params: { id: data.requestId, record: '1' } })
+			: router.push({ pathname: '/seller-answer', params: { id: data.requestId, voice: '1' } })
 	}
 	await openPush(data)
 }
