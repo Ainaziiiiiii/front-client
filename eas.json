@@ -14,7 +14,9 @@
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://kudaibergen-back-production.up.railway.app",
         "EXPO_PUBLIC_CENTRIFUGO_URL": "wss://discerning-embrace-production-7196.up.railway.app/connection/websocket"
@@ -30,8 +32,14 @@
   },
   "submit": {
     "production": {
-      "ios": {},
-      "android": { "track": "internal", "releaseStatus": "draft" }
+      "ios": {
+        "ascAppId": "6830052168",
+        "appleTeamId": "745P2ZBQ77"
+      },
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
     }
   }
 }
