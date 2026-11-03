@@ -1,8 +1,8 @@
-import { Pressable, Text, View, type ImageSourcePropType } from 'react-native'
-import { Image } from 'expo-image'
-import { logos } from '@/data/brands'
+import { Pressable, Text, View } from 'react-native'
+import { Image } from './image'
+import { logos, type LogoSource } from '@/data/brands'
 import { resolveUrl } from '@/lib/api'
-import { fontFamily, useColors } from '@/theme'
+import { fixed, fontFamily, fs, useColors } from '@/theme'
 
 /** Local demo brand (`logo`) or the server's BrandDto (`logoUrl`). */
 interface BrandLike {
@@ -10,7 +10,7 @@ interface BrandLike {
 	name: string
 	placeholder: string
 	color: string
-	logo?: ImageSourcePropType | null
+	logo?: LogoSource | null
 	logoUrl?: string | null
 }
 
@@ -25,12 +25,12 @@ export function BrandLogo({ brand: input, size = 36 }: { brand: BrandLike; size?
 				width: size,
 				height: size,
 				borderRadius: size / 2,
-				backgroundColor: '#FFFFFF',
+				backgroundColor: fixed.white,
 				borderWidth: brand.logo ? 1 : 1,
 				borderColor: brand.logo ? c.border : brand.color,
 				alignItems: 'center',
 				justifyContent: 'center',
-				shadowColor: '#201F1D',
+				shadowColor: fixed.shadow,
 				shadowOpacity: 0.1,
 				shadowOffset: { width: 0, height: 1 },
 				shadowRadius: 2,
@@ -87,7 +87,7 @@ export function BrandChip({
 			}}
 		>
 			<BrandLogo brand={brand} size={height - 16} />
-			<Text style={{ fontSize: 15.5, fontFamily: fontFamily(selected ? 700 : 600), color: selected ? c.brandStrong : c.inkSecondary }}>
+			<Text style={{ fontSize: fs.md, fontFamily: fontFamily(selected ? 700 : 600), color: selected ? c.brandStrong : c.inkSecondary }}>
 				{label ?? brand.name}
 			</Text>
 		</Pressable>
