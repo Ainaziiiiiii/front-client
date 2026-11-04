@@ -7,28 +7,34 @@ type Status = 'PENDING_VERIFICATION' | 'ACTIVE' | 'BLOCKED' | 'REJECTED'
 /**
  * Why requests don't come [11, 21, 39]: on review / blocked / rejected by the administration, with the reason.
  * Rejected — the place was not confirmed: `action` («Выбрать другой контейнер», «Изменить профиль»).
+ * A shop off the market has no place to confirm — rejected, it is fixed in the profile like a master.
  */
 export function AccountStatusBanner({
 	status,
 	reason,
 	kind,
+	offMarket,
 	action,
 }: {
 	status: Status | undefined
 	reason: string | null | undefined
 	kind: 'shop' | 'master'
+	offMarket?: boolean
 	action?: { label: string; onPress: () => void }
 }) {
 	const c = useColors()
 	if (!status || status === 'ACTIVE') return null
 	const bad = status === 'BLOCKED' || status === 'REJECTED'
 	const what = kind === 'shop' ? t('Магазин') : t('Профиль')
+	const place = kind === 'shop' && !offMarket
 	const title =
 		status === 'BLOCKED'
 			? t('{0} заблокирован', what)
 			: status === 'REJECTED'
-				? kind === 'shop'
+				? place
 					? t('Место не подтверждено')
+					: kind === 'shop'
+						? t('Магазин отклонён')
 					: t('Профиль отклонён')
 				: t('{0} на проверке', what)
 	const text =
@@ -36,11 +42,15 @@ export function AccountStatusBanner({
 		(status === 'BLOCKED'
 			? t('Запросы не приходят. Напишите в поддержку.')
 			: status === 'REJECTED'
-				? kind === 'shop'
+				? place
 					? t('Администрация не подтвердила контейнер. Магазин скрыт — выберите контейнер заново.')
+					: kind === 'shop'
+						? t('Администрация не подтвердила магазин. Исправьте данные и сохраните.')
 					: t('Администрация не подтвердила профиль. Исправьте данные и сохраните.')
-				: kind === 'shop'
+				: place
 					? t('Запросы начнут приходить, как только администрация подтвердит место.')
+					: kind === 'shop'
+						? t('Запросы начнут приходить, как только администрация подтвердит магазин.')
 					: t('Заявки начнут приходить, как только администратор подтвердит профиль.'))
 
 	return (

@@ -64,7 +64,8 @@ export default function SellerBoxScreen() {
 				status={data?.status}
 				reason={data?.blockReason}
 				kind="shop"
-				action={{ label: t('Выбрать другой контейнер'), onPress: () => router.push('/box-select') }}
+				offMarket={Boolean(data && !data.location)}
+				action={data && !data.location ? { label: t('Изменить профиль'), onPress: () => router.push('/seller-profile') } : { label: t('Выбрать другой контейнер'), onPress: () => router.push('/box-select') }}
 			/>
 
 			<View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>

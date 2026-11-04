@@ -125,13 +125,20 @@ export default function BoxSelectScreen() {
 			if (!point) return
 			register.mutate(
 				{ name: name.trim(), address: address.trim(), lat: point.lat, lng: point.lng, brandIds: picked },
-				{ onSuccess: () => router.replace('/seller') }
+				{ onSuccess: (shop) => router.replace(shop.status === 'PENDING_VERIFICATION' ? '/under-review?kind=shop' : '/seller') }
 			)
 			return
 		}
 		if (!slot) return
 		if (hasShop) relocate.mutate(slot.id, { onSuccess: () => (toast(t('Контейнер изменён')), router.back()) })
-		else register.mutate({ containerId: slot.id, brandIds: picked }, { onSuccess: () => (router.replace('/seller'), askForPushAt('shop')) })
+		else
+			register.mutate(
+				{ containerId: slot.id, brandIds: picked },
+				{
+					onSuccess: (shop) =>
+						shop.status === 'PENDING_VERIFICATION' ? router.replace('/under-review?kind=shop') : (router.replace('/seller'), askForPushAt('shop')),
+				}
+			)
 	}
 
 	return (

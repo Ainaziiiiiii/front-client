@@ -76,7 +76,8 @@ export default function SellerRequestsScreen() {
 							status={shop.data?.status}
 							reason={shop.data?.blockReason}
 							kind="shop"
-							action={{ label: t('Выбрать другой контейнер'), onPress: () => router.push('/box-select') }}
+							offMarket={Boolean(shop.data && !shop.data.location)}
+							action={shop.data && !shop.data.location ? { label: t('Изменить профиль'), onPress: () => router.push('/seller-profile') } : { label: t('Выбрать другой контейнер'), onPress: () => router.push('/box-select') }}
 						/>
 						<QueryErrorBanner
 							error={fresh.error}

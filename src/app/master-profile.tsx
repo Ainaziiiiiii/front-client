@@ -296,7 +296,14 @@ function MasterProfileForm({ initial, error }: { initial: MyMaster | null; error
 								brandIds: form.allBrands ? [] : form.brandIds,
 								phone: form.phone || undefined,
 							},
-							{ onSuccess: () => (toast(t('Профиль сохранён')), first ? (router.replace('/master'), askForPushAt('master')) : router.back()) }
+							{
+								onSuccess: (master) =>
+									!first
+										? (toast(t('Профиль сохранён')), router.back())
+										: master.status === 'PENDING_VERIFICATION'
+											? router.replace('/under-review?kind=master')
+											: (toast(t('Профиль сохранён')), router.replace('/master'), askForPushAt('master')),
+							}
 						)
 					}
 				/>
