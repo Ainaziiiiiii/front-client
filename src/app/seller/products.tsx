@@ -17,6 +17,7 @@ import type { MyPartItem, MyPartsFilter } from '@/api/types'
 import { usePartDraft } from '@/store/usePartDraft'
 import { t } from '@/i18n'
 import { PlayIcon } from '@/components/voice'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** 24 «Мои запчасти» (tab «Товары»). Counters come from GET /my/parts/summary. */
 export default function SellerProductsScreen() {
@@ -103,7 +104,7 @@ export default function SellerProductsScreen() {
 							}}
 						>
 							<SearchIcon size={20} color={c.muted} strokeWidth={2.4} />
-							<TextInput
+							<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 								value={q}
 								onChangeText={setQ}
 								placeholder={t('Поиск по моим запчастям')}

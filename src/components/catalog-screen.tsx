@@ -20,6 +20,7 @@ import { useSession } from '@/store/useSession'
 import { useRecentSearches } from '@/store/useRecentSearches'
 import { briefPlace } from '@/lib/shop-place'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 const SORTS: { value: CatalogSort; label: string }[] = [
 	{ value: 'PRICE_ASC', label: t('Дешевле') },
@@ -105,7 +106,7 @@ export function CatalogScreen() {
 				}}
 			>
 				<SearchIcon size={20} color={c.muted} strokeWidth={2.4} />
-				<TextInput
+				<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 					value={text}
 					onChangeText={setText}
 					placeholder={t('Стойки, колодки, номер детали…')}

@@ -25,6 +25,7 @@ import { toLang, useSession } from '@/store/useSession'
 import type { MyPartItem, MyShop } from '@/api/types'
 import { openSupport } from '@/lib/support'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /**
  * 15 «Мой бокс» — a profile like on social apps: avatar (tap — change), counters, name and place, my brands,
@@ -369,11 +370,11 @@ function EditSheet({ shop, onClose }: { shop: MyShop; onClose: () => void }) {
 				footer={<Button label={t('Сохранить')} disabled={name.trim().length < 2 || !phoneOk} loading={update.isPending} onPress={save} />}
 			>
 				<Label>{t('Название')}</Label>
-				<TextInput value={name} onChangeText={setName} maxLength={60} placeholder={t('Автодеталь Азамат')} placeholderTextColor={c.fillInk} style={field} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => phoneRef.current?.focus()} />
+				<TextInput inputAccessoryViewID={KEYBOARD_DONE} value={name} onChangeText={setName} maxLength={60} placeholder={t('Автодеталь Азамат')} placeholderTextColor={c.fillInk} style={field} returnKeyType="next" submitBehavior="submit" onSubmitEditing={() => phoneRef.current?.focus()} />
 				<Label>{t('Телефон для покупателей')}</Label>
 				<View style={{ ...field, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
 					<Text style={{ fontSize: fs.xl, fontFamily: fontFamily(700), color: c.muted }}>{COUNTRY_CODE}</Text>
-					<TextInput
+					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						ref={phoneRef}
 						value={phone}
 						onChangeText={(text) => setPhone(formatLocalPhone(text))}

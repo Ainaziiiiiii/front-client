@@ -17,6 +17,7 @@ import { useCreateRequest, useRecipientsEstimate } from '@/api/requests'
 import { useClientCar } from '@/store/useClientCar'
 import { useSession } from '@/store/useSession'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /**
  * 04 «Найти запчасть»: car, photo + voice + text, the request goes to sellers of the car's brand.
@@ -261,7 +262,7 @@ export default function SearchPartScreen() {
 				</View>
 				{voice.error ? <Text style={{ fontSize: fs.sm, fontFamily: fontFamily(500), color: c.danger }}>{voice.error}</Text> : null}
 
-				<TextInput
+				<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 					value={text}
 					onChangeText={setText}
 					maxLength={200}

@@ -18,6 +18,7 @@ import { useCreateServiceRequest, useServiceEstimate } from '@/api/services'
 import { MARKET_POINT } from '@/data/service-types'
 import { useServiceDraft } from '@/store/useServiceDraft'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** The six tiles of the mockup, in its order. */
 const SERVICES: { code: string; label: string }[] = [
@@ -313,7 +314,7 @@ export default function ServiceNewScreen() {
 				) : null}
 				{voice.error ? <Text style={{ fontSize: fs.sm, fontFamily: fontFamily(500), color: c.danger }}>{voice.error}</Text> : null}
 
-				<TextInput
+				<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 					value={description}
 					onChangeText={(value) => setDescription(value.slice(0, 500))}
 					placeholder={t('Например: стучит спереди справа на кочках')}

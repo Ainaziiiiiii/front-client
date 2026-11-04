@@ -13,6 +13,7 @@ import { formatNumber } from '@/lib/format'
 import { useIncomingRequest, useMarkSeen, useReplyToRequest } from '@/api/incoming'
 import type { PartCondition } from '@/api/types'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 
 /**
@@ -154,13 +155,13 @@ export default function SellerAnswerScreen() {
 								gap: 8,
 							}}
 						>
-							<TextInput
+							<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 								value={amount > 0 ? formatNumber(amount) : price}
 								onChangeText={(text) => setPrice(text.replace(/\D/g, '').slice(0, 7))}
 								keyboardType="number-pad"
 								placeholder={t('Цена')}
 								placeholderTextColor={c.fillInk}
-								style={{ minWidth: 40, fontSize: fs.hero, fontFamily: fontFamily(800), letterSpacing: -0.64, color: c.ink, padding: 0 }}
+								style={{ flex: 1, minWidth: 40, fontSize: fs.hero, fontFamily: fontFamily(800), letterSpacing: -0.64, color: c.ink, padding: 0 }}
 							/>
 							<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.muted }}>{t('сом')}</Text>
 						</View>

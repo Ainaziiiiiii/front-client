@@ -17,6 +17,7 @@ import { usePublishPart, useSavePart } from '@/api/parts'
 import type { PartVideoUpload } from '@/api/types'
 import { t } from '@/i18n'
 import { usePartDraft } from '@/store/usePartDraft'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 const MAX_SEC = 30
 
@@ -210,7 +211,7 @@ export default function SellerVideoScreen() {
 
 				<View style={{ borderRadius: 16, backgroundColor: c.card, padding: 12, gap: 8 }}>
 					<Text style={label}>{t('Что это')}</Text>
-					<TextInput
+					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						value={title}
 						onChangeText={setTitle}
 						returnKeyType="next" submitBehavior="submit"
@@ -232,7 +233,7 @@ export default function SellerVideoScreen() {
 					<View style={{ flexDirection: 'row', gap: 10, paddingTop: 4 }}>
 						<View style={{ flex: 1, gap: 6 }}>
 							<Text style={label}>{t('Цена, сом')}</Text>
-							<TextInput
+							<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 								ref={priceRef}
 								value={price}
 								returnKeyType="done"

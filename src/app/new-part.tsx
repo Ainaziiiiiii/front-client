@@ -17,6 +17,7 @@ import { useMyPart, usePublishPart, useSavePart } from '@/api/parts'
 import type { MediaItem, PartCondition } from '@/api/types'
 import { MAX_PART_PHOTOS, type PartDraft, partBody, usePartDraft } from '@/store/usePartDraft'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 const CONDITIONS: { value: PartCondition; label: string }[] = [
 	{ value: 'NEW', label: t('Новое') },
@@ -248,7 +249,7 @@ export default function NewPartScreen() {
 							justifyContent: 'center',
 						}}
 					>
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={draft.title}
 							onChangeText={(title) => draft.set({ title })}
 							maxLength={120}
@@ -392,7 +393,7 @@ export default function NewPartScreen() {
 								gap: 8,
 							}}
 						>
-							<TextInput
+							<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 								value={draft.price ? formatNumber(Number(draft.price.replace(/\D/g, ''))) : ''}
 								onChangeText={(text) => draft.set({ price: text.replace(/\D/g, '').slice(0, 9) })}
 								keyboardType="numeric"

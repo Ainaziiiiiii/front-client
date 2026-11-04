@@ -10,6 +10,7 @@ import { formatDay } from '@/lib/format'
 import { useSession } from '@/store/useSession'
 import type { components } from '@/api/schema'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 type SendOtp = components['schemas']['SendOtpResponse']
 type Deletion = components['schemas']['DeletionResponse']
@@ -56,7 +57,7 @@ export default function DeleteAccountScreen() {
 				{send.data ? (
 					<>
 						<Text style={{ fontSize: fs.md, fontFamily: fontFamily(600), color: c.muted }}>{t('Код из SMS')}</Text>
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={code}
 							onChangeText={(value) => setCode(value.replace(/\D/g, '').slice(0, 4))}
 							keyboardType="number-pad"

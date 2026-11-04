@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { QueryErrorBanner, ScreenHeader } from '@/components/ui'
@@ -11,11 +11,13 @@ import { useBrands, useModels } from '@/api/directory'
 import type { Brand } from '@/api/types'
 import { toPartFilters, useCatalogFilters } from '@/store/useCatalogFilters'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** 28 «Марка авто» — for the catalog when the car is not in the garage. */
 export default function PickBrandScreen() {
 	const c = useColors()
 	const insets = useSafeAreaInsets()
+	const { height } = useWindowDimensions()
 	const filters = useCatalogFilters()
 	const [q, setQ] = useState('')
 	const [brand, setBrand] = useState<Brand | null>(filters.brand)
@@ -35,6 +37,12 @@ export default function PickBrandScreen() {
 	const apply = (withModel: boolean) => {
 		if (!brand) return
 		filters.pickBrand(brand, withModel && model ? { id: model.id, label: model.label } : null)
+		router.back()
+	}
+	// A tapped model is the choice — no second tap on «Показать» that a long list pushes off the screen.
+	const pickModel = (picked: { id: number; label: string }) => {
+		if (!brand) return
+		filters.pickBrand(brand, { id: picked.id, label: picked.label })
 		router.back()
 	}
 
@@ -57,7 +65,7 @@ export default function PickBrandScreen() {
 					}}
 				>
 					<SearchIcon size={20} color={c.muted} strokeWidth={2.4} />
-					<TextInput
+					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						value={q}
 						onChangeText={setQ}
 						placeholder="Марка или модель"
@@ -162,14 +170,15 @@ export default function PickBrandScreen() {
 						</View>
 					</View>
 
-					<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+					{/* Toyota and Mercedes have dozens of models — the list scrolls, the buttons stay on screen. */}
+					<ScrollView style={{ maxHeight: height * 0.4 }} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
 						{(models.data ?? []).map((m) => {
 							const active = modelId === m.id
 							const label = m.label
 							return (
 								<Pressable
 									key={m.id}
-									onPress={() => setModelId(active ? null : m.id)}
+									onPress={() => pickModel(m)}
 									style={{
 										height: 44,
 										paddingHorizontal: 14,
@@ -187,7 +196,7 @@ export default function PickBrandScreen() {
 								</Pressable>
 							)
 						})}
-					</View>
+					</ScrollView>
 
 					<View style={{ flexDirection: 'row', gap: 8 }}>
 						<Pressable

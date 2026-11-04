@@ -12,6 +12,7 @@ import { API_URL } from '@/lib/env'
 import { useSendOtp } from '@/api/auth'
 import { homeHref, useSession } from '@/store/useSession'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 const LANGS = [
 	{ value: 'ru', label: 'RU' },
@@ -129,7 +130,7 @@ export default function PhoneScreen() {
 				>
 					<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.ink }}>{COUNTRY_CODE}</Text>
 					<View style={{ width: 1.5, height: 26, backgroundColor: c.border }} />
-					<TextInput
+					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						value={phone}
 						onChangeText={(text) => {
 							const next = formatLocalPhone(text)

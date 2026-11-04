@@ -11,6 +11,7 @@ import { useClientCar } from '@/store/useClientCar'
 import { SelectField, SelectSheet } from '@/components/select-sheet'
 import { FUELS, ORIGINS } from '@/store/useServiceDraft'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 const VOLUMES = [1.3, 1.5, 1.8, 2.0, 2.4, 2.5, 3.0, 3.5, 4.0]
 
@@ -106,7 +107,7 @@ export default function GarageAddScreen() {
 					}}
 				>
 					<SearchIcon size={20} color={c.muted} strokeWidth={2.4} />
-					<TextInput
+					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						value={q}
 						onChangeText={setQ}
 						placeholder={t('Марка: Toyota, мерс, бэха…')}

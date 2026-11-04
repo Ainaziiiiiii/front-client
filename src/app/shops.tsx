@@ -12,6 +12,7 @@ import { flattenPages } from '@/api/pagination'
 import { useShopList } from '@/api/catalog'
 import type { ShopCard } from '@/api/types'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** «Все магазины»: боксы рынка и центры вне рынка — логотип, название, рейтинг, место; поиск по названию. */
 export default function ShopsScreen() {
@@ -55,7 +56,7 @@ export default function ShopsScreen() {
 							}}
 						>
 							<SearchIcon size={22} color={c.muted} strokeWidth={2.4} />
-							<TextInput
+							<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 								value={text}
 								onChangeText={setText}
 								placeholder={t('Название магазина')}

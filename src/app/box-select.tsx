@@ -17,6 +17,7 @@ import { useClaimContainer } from '@/api/complaints'
 import { ApiError } from '@/lib/api'
 import type { Brand } from '@/api/types'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** Rows in the order of the mockup grid [11]; rows the mockup doesn't know go after them. */
 const ROW_ORDER = ['18', '16', '14', '12', '10', '8', '6', '4', '1', t('Ц'), t('Л'), t('Н'), t('Я'), t('С'), t('Ж'), t('Д'), t('В'), t('Ю'), t('Х'), t('У')]
@@ -175,7 +176,7 @@ export default function BoxSelectScreen() {
 				{store ? (
 					<>
 						<Label>{t('Название')}</Label>
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={name}
 							onChangeText={(text) => setName(text.slice(0, 60))}
 							placeholder={t('Например, Kia Центр Бишкек')}
@@ -183,7 +184,7 @@ export default function BoxSelectScreen() {
 							style={field}
 						/>
 						<Label>{t('Адрес')}</Label>
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={address}
 							onChangeText={(text) => setAddress(text.slice(0, 160))}
 							placeholder={t('ул. Ленина 45')}
@@ -247,7 +248,7 @@ export default function BoxSelectScreen() {
 								justifyContent: 'center',
 							}}
 						>
-							<TextInput
+							<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 								value={number}
 								onChangeText={(text) => setNumber(text.replace(/\D/g, '').slice(0, 4))}
 								keyboardType="number-pad"
@@ -375,7 +376,7 @@ function OtherBrands({
 						}}
 					>
 						<SearchIcon size={20} color={c.muted} strokeWidth={2.4} />
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={q}
 							onChangeText={setQ}
 							placeholder={t('Найти марку')}
@@ -454,7 +455,7 @@ function ClaimSheet({
 						<>
 							<Text style={{ fontSize: fs.h3, fontFamily: fontFamily(700), color: c.ink }}>{t('{0} занят', box?.place ?? ' ')}</Text>
 							<Text style={{ fontSize: fs.base, lineHeight: 23, fontFamily: fontFamily(400), color: c.muted }}>{t('Если это ваш контейнер, а в приложении его занял другой продавец, — откройте спор. Администрация рынка разберётся.')}</Text>
-							<TextInput
+							<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 								value={text}
 								onChangeText={(v) => setText(v.slice(0, 500))}
 								placeholder={t('Комментарий — необязательно: с какого года аренда, договор…')}

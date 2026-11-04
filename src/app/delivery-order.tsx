@@ -19,6 +19,7 @@ import {
 } from '@/api/delivery'
 import type { DeliveryOrder } from '@/api/types'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /**
  * One delivery order. The buyer sees «Где посылка» (status card, timeline, track number); the shop — «Заказ с
@@ -310,7 +311,7 @@ function ShopSide({ order, bottom }: { order: DeliveryOrder; bottom: number }) {
 								}}
 							>
 								<Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.muted }}>{t('Вес, кг')}</Text>
-								<TextInput
+								<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 									value={weight}
 									onChangeText={setWeight}
 									editable={!packed}

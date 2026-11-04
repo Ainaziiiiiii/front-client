@@ -18,6 +18,7 @@ import type { CarOrigin, MyMaster } from '@/api/types'
 import { MARKET_POINT } from '@/data/service-types'
 import { ORIGINS } from '@/store/useServiceDraft'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 interface Form {
 	name: string
@@ -147,7 +148,7 @@ function MasterProfileForm({ initial, error }: { initial: MyMaster | null; error
 				{!initial ? (
 					<>
 						<SectionLabel>{t('Название')}</SectionLabel>
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={form.name}
 							onChangeText={(name) => patch({ name: name.slice(0, 60) })}
 							placeholder={t('СТО «Ходовик» или Мастер Эрлан')}
@@ -227,7 +228,7 @@ function MasterProfileForm({ initial, error }: { initial: MyMaster | null; error
 					<View style={{ gap: 8 }}>
 						<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 48, borderRadius: 12, backgroundColor: c.card, borderWidth: 2, borderColor: c.brand, paddingHorizontal: 14 }}>
 							<MapPinIcon size={20} color={c.brandStrong} />
-							<TextInput
+							<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 								value={form.address}
 								onChangeText={(address) => patch({ address })}
 								placeholder={t('Адрес: улица, дом, контейнер')}
@@ -266,7 +267,7 @@ function MasterProfileForm({ initial, error }: { initial: MyMaster | null; error
 				</View>
 
 				<SectionLabel>{t('Телефон для клиентов')}</SectionLabel>
-				<TextInput
+				<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 					value={form.phone}
 					onChangeText={(phone) => patch({ phone: phone.replace(/[^\d+]/g, '').slice(0, 13) })}
 					keyboardType="phone-pad"

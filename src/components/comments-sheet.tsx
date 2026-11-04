@@ -12,6 +12,7 @@ import { flattenPages } from '@/api/pagination'
 import { useAddPartComment, useDeletePartComment, usePartComments, useSignedIn } from '@/api/catalog'
 import type { PartComment } from '@/api/types'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /**
  * Comments under a video part (the reels-like feed): newest first, «Продавец» on the box's own answers, a field to
@@ -106,7 +107,7 @@ export function CommentsSheet({ partId, onClose }: { partId: number; onClose: ()
 
 			{add.error ? <Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{add.error.message}</Text> : null}
 			<View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
-				<TextInput
+				<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 					value={text}
 					onChangeText={setText}
 					placeholder={signedIn ? t('Написать комментарий') : t('Войдите, чтобы написать')}

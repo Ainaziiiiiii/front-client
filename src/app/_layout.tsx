@@ -24,6 +24,7 @@ import { useSession } from '@/store/useSession'
 import { useColors } from '@/theme'
 import { ToastHost } from '@/components/ui/toast'
 import { PushPrimer } from '@/components/push-primer'
+import { KeyboardDoneBar } from '@/components/keyboard-done'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -75,6 +76,7 @@ export default function RootLayout() {
 								{/* Set here, not from the screen: options from the screen are re-applied on every render and iOS re-presents the modal. */}
 								<Stack.Screen name="master-answer" options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }} />
 							</Stack>
+							<KeyboardDoneBar />
 							<PushPrimer />
 							<ToastHost />
 						</SafeAreaProvider>

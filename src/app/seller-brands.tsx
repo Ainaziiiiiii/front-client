@@ -10,6 +10,7 @@ import { plural } from '@/lib/format'
 import { useBrands } from '@/api/directory'
 import { useMyShop, useSetShopBrands } from '@/api/shop'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** 23 «Марки, которые продаю» — requests come only for these brands. */
 export default function SellerBrandsScreen() {
@@ -47,7 +48,7 @@ export default function SellerBrandsScreen() {
 					}}
 				>
 					<SearchIcon size={20} color={c.muted} strokeWidth={2.4} />
-					<TextInput
+					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						value={q}
 						onChangeText={setQ}
 						placeholder={t('Найти марку')}

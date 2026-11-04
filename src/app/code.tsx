@@ -9,6 +9,7 @@ import { formatE164 } from '@/lib/phone'
 import { useSendOtp, useVerifyOtp } from '@/api/auth'
 import { homeHref } from '@/store/useSession'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 const CODE_LENGTH = 4
 
@@ -116,7 +117,7 @@ export default function CodeScreen() {
 							)
 						})}
 					</Pressable>
-					<TextInput
+					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						ref={inputRef}
 						value={code}
 						onChangeText={(text) => {

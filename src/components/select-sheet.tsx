@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CheckIcon, CloseIcon, SearchIcon } from '@/components/icons'
 import { fontFamily, fs, sectionTitle, useColors } from '@/theme'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 export interface SelectOption<K extends string | number> {
 	key: K
@@ -106,7 +107,7 @@ export function SelectSheet<K extends string | number>({
 						}}
 					>
 						<SearchIcon size={22} color={c.muted} strokeWidth={2.4} />
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={q}
 							onChangeText={setQ}
 							autoFocus

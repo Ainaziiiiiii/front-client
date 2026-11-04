@@ -7,6 +7,7 @@ import { fontFamily, fs, useColors } from '@/theme'
 import { useComplain } from '@/api/complaints'
 import type { ComplaintReason, ComplaintType } from '@/api/types'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 const REASONS: { value: ComplaintReason; label: string; for?: ComplaintType[] }[] = [
 	{ value: 'FAKE_ORIGINAL', label: t('Подделка под оригинал'), for: ['PART', 'SHOP', 'SHOP_PHOTO'] },
@@ -83,7 +84,7 @@ function Sheet({ target, onClose }: { target: ComplaintTarget; onClose: () => vo
 								)
 							})}
 						</View>
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={text}
 							onChangeText={(v) => setText(v.slice(0, 500))}
 							placeholder={t('Подробности — необязательно')}

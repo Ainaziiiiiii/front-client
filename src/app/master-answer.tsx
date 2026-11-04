@@ -11,19 +11,21 @@ import { fixed, fontFamily, fs, sectionTitle, useColors } from '@/theme'
 import { formatClock, formatNumber } from '@/lib/format'
 import { useMasterOffer, useMasterRequest } from '@/api/services'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 type When = 'NOW' | 'TODAY' | 'TOMORROW'
 
-/** Next full hour plus one: the default «Сегодня 15:00». */
-function laterToday(now: Date) {
-	const at = new Date(now)
-	at.setHours(now.getHours() + 2, 0, 0, 0)
-	return at
+const LAST_HOUR = 21
+
+/** Hours the master can pick: today — from the next full hour, tomorrow — the working day. */
+function hoursFor(day: Exclude<When, 'NOW'>, now: Date) {
+	const first = day === 'TODAY' ? now.getHours() + 1 : 9
+	return Array.from({ length: Math.max(0, LAST_HOUR - first + 1) }, (_, i) => first + i)
 }
 
-function tomorrowMorning(now: Date) {
-	const at = new Date(now.getTime() + 86_400_000)
-	at.setHours(10, 0, 0, 0)
+function atHour(day: Exclude<When, 'NOW'>, hour: number, now: Date) {
+	const at = new Date(day === 'TODAY' ? now : now.getTime() + 86_400_000)
+	at.setHours(hour, 0, 0, 0)
 	return at
 }
 
@@ -42,8 +44,12 @@ export default function MasterAnswerScreen() {
 	const [openedAt] = useState(() => new Date())
 	const [price, setPrice] = useState('')
 	// Late in the evening «today + 2 hours» is already tomorrow — offer the morning instead.
-	const [when, setWhen] = useState<When>(() => (openedAt.getHours() >= 21 ? 'TOMORROW' : 'TODAY'))
-	const [times] = useState<Record<When, Date>>(() => ({ NOW: openedAt, TODAY: laterToday(openedAt), TOMORROW: tomorrowMorning(openedAt) }))
+	const [when, setWhen] = useState<When>(() => (hoursFor('TODAY', openedAt).length ? 'TODAY' : 'TOMORROW'))
+	// The master picks the hour; by default — two hours from now, or 10:00 tomorrow.
+	const [hour, setHour] = useState<Record<Exclude<When, 'NOW'>, number>>(() => ({
+		TODAY: Math.min(openedAt.getHours() + 2, LAST_HOUR),
+		TOMORROW: 10,
+	}))
 	// The voice goes to the client as is; the price and the time the master sets by hand.
 	const voice = useVoiceNote('OFFER')
 
@@ -63,7 +69,7 @@ export default function MasterAnswerScreen() {
 
 	const send = () => {
 		if (busy) return
-		const at = when === 'NOW' ? new Date() : times[when]
+		const at = when === 'NOW' ? new Date() : atHour(when, hour[when], openedAt)
 		offer.mutate(
 			{
 				id,
@@ -80,7 +86,7 @@ export default function MasterAnswerScreen() {
 
 	const timeLabel = (value: When) => {
 		if (value === 'NOW') return t('Сейчас')
-		if (value === 'TODAY') return t('Сегодня {0}', formatClock(times.TODAY))
+		if (value === 'TODAY') return t('Сегодня')
 		return t('Завтра')
 	}
 
@@ -138,7 +144,7 @@ export default function MasterAnswerScreen() {
 
 					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
 						<Text style={{ ...sectionTitle, color: c.inkSecondary }}>
-							{voice.result ? t('Заполнили из голоса') : t('Цена и время')}
+							{voice.result ? t('Заполнили из голоса') : t('Цена и когда сможете')}
 						</Text>
 						<View style={{ flex: 1 }} />
 						{voice.result ? <Text style={{ fontSize: fs.sm, fontFamily: fontFamily(500), color: c.muted }}>{t('можно поправить')}</Text> : null}
@@ -157,26 +163,26 @@ export default function MasterAnswerScreen() {
 						}}
 					>
 						<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.muted }}>{t('от')}</Text>
-						<TextInput
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={priceValue ? formatNumber(priceValue) : ''}
 							onChangeText={(value) => setPrice(value.replace(/\D/g, '').slice(0, 7))}
 							keyboardType="number-pad"
 							placeholder="0"
 							placeholderTextColor={c.border}
-							style={{ minWidth: 40, fontSize: fs.hero, fontFamily: fontFamily(800), letterSpacing: -0.64, color: c.ink, padding: 0 }}
+							style={{ flex: 1, minWidth: 40, fontSize: fs.hero, fontFamily: fontFamily(800), letterSpacing: -0.64, color: c.ink, padding: 0 }}
 						/>
 						<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.muted }}>{t('сом')}</Text>
 					</View>
 
 					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-						{(['NOW', 'TODAY', 'TOMORROW'] as const).map((value) => {
+						{(['NOW', 'TODAY', 'TOMORROW'] as const).filter((value) => value !== 'TODAY' || hoursFor('TODAY', openedAt).length).map((value) => {
 							const selected = value === when
 							return (
 								<Pressable
 									key={value}
 									onPress={() => setWhen(value)}
 									style={{
-										flex: value === 'TODAY' ? 1.6 : 1,
+										flex: 1,
 										height: 46,
 										borderRadius: 12,
 										backgroundColor: selected ? c.brandTint : c.card,
@@ -195,6 +201,32 @@ export default function MasterAnswerScreen() {
 							)
 						})}
 					</View>
+
+					{when !== 'NOW' ? (
+						<ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 8 }}>
+							{hoursFor(when, openedAt).map((h) => {
+								const selected = hour[when] === h
+								return (
+									<Pressable
+										key={h}
+										onPress={() => setHour((current) => ({ ...current, [when]: h }))}
+										style={{
+											height: 40,
+											paddingHorizontal: 14,
+											borderRadius: 20,
+											backgroundColor: selected ? c.brand : c.surface,
+											alignItems: 'center',
+											justifyContent: 'center',
+										}}
+									>
+										<Text style={{ fontSize: fs.base, fontFamily: fontFamily(selected ? 700 : 600), color: selected ? fixed.white : c.ink }}>
+											{formatClock(atHour(when, h, openedAt))}
+										</Text>
+									</Pressable>
+								)
+							})}
+						</ScrollView>
+					) : null}
 
 					{offer.error ? <Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{offer.error.message}</Text> : null}
 

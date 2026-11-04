@@ -22,6 +22,7 @@ import { type ChatSide, useChat, useChatMessages, useMarkRead, useQuickReplies, 
 import type { ChatMessage, QuickReply } from '@/api/types'
 import { ComplaintSheet, type ComplaintTarget } from '@/components/complaint-sheet'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** Labels for codes the server sends without text. */
 export const SYSTEM_TEXT: Record<string, string> = {
@@ -278,7 +279,7 @@ export function ChatConversation({ chatId, mySide, header, pinned, onAction, dra
 				{voice.recording ? (
 					<RecordingBar seconds={voice.seconds} onCancel={voice.cancel} />
 				) : (
-					<TextInput
+					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						value={text}
 						editable={canWrite}
 						onChangeText={(value) => {
