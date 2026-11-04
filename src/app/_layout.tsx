@@ -71,7 +71,10 @@ export default function RootLayout() {
 									headerShown: false,
 									contentStyle: { backgroundColor: c.surface },
 								}}
-							/>
+							>
+								{/* Set here, not from the screen: options from the screen are re-applied on every render and iOS re-presents the modal. */}
+								<Stack.Screen name="master-answer" options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }} />
+							</Stack>
 							<PushPrimer />
 							<ToastHost />
 						</SafeAreaProvider>

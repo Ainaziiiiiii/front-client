@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Stack, router, useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useConfirmLeave } from '@/lib/use-confirm-leave'
 import { toast } from '@/components/ui'
 import { VoicePlayer, VoiceRecordingPanel, VoiceResultPanel, useVoiceNote } from '@/components/voice'
@@ -87,20 +87,17 @@ export default function MasterAnswerScreen() {
 	const subtitle = request ? [request.description, request.car.modelLabel ?? request.car.label].filter(Boolean).join(' · ') : ' '
 
 	return (
-		<>
-			<Stack.Screen options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }} />
-			<KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-				<Pressable style={{ flex: 1, backgroundColor: 'rgba(32,31,29,0.45)' }} onPress={close} />
-				<View
-					style={{
-						backgroundColor: c.card,
-						borderTopLeftRadius: 24,
-						borderTopRightRadius: 24,
-						paddingTop: 10,
-						paddingHorizontal: 16,
-						paddingBottom: 28 + insets.bottom,
-						gap: 12,
-					}}
+		<KeyboardAvoidingView
+			style={{ flex: 1, paddingTop: insets.top + 12, backgroundColor: 'rgba(32,31,29,0.45)' }}
+			behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+		>
+			<Pressable style={{ flex: 1 }} onPress={close} />
+			{/* Scrolls when the keyboard leaves no room — the client's voice and photos stay reachable. */}
+			<View style={{ flexShrink: 1, backgroundColor: c.card, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+				<ScrollView
+					bounces={false}
+					keyboardShouldPersistTaps="handled"
+					contentContainerStyle={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: 28 + insets.bottom, gap: 12 }}
 				>
 					<View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: c.border, alignSelf: 'center' }} />
 
@@ -218,8 +215,8 @@ export default function MasterAnswerScreen() {
 						<SendPlane size={20} color={fixed.white} />
 						<Text style={{ fontSize: fs.xl, fontFamily: fontFamily(700), color: fixed.white }}>{offer.isPending ? t('Отправляем…') : t('Отправить клиенту')}</Text>
 					</Pressable>
-				</View>
-			</KeyboardAvoidingView>
-		</>
+				</ScrollView>
+			</View>
+		</KeyboardAvoidingView>
 	)
 }

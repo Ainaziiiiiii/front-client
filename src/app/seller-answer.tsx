@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useConfirmLeave } from '@/lib/use-confirm-leave'
@@ -80,122 +80,120 @@ export default function SellerAnswerScreen() {
 				style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(32,31,29,0.45)' }}
 			/>
 
+			{/* Full height so the sheet can shrink and scroll when the keyboard is up — the voice and photos stay reachable. */}
 			<KeyboardAvoidingView
 				behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-				style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}
+				pointerEvents="box-none"
+				style={{ position: 'absolute', top: insets.top + 12, left: 0, right: 0, bottom: 0, justifyContent: 'flex-end' }}
 			>
-				<View
-					style={{
-						backgroundColor: c.card,
-						borderTopLeftRadius: 24,
-						borderTopRightRadius: 24,
-						paddingTop: 10,
-						paddingHorizontal: 16,
-						paddingBottom: Math.max(28, insets.bottom + 12),
-						gap: 12,
-					}}
-				>
-					<View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: c.border, alignSelf: 'center' }} />
+				<View style={{ flexShrink: 1, backgroundColor: c.card, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+					<ScrollView
+						bounces={false}
+						keyboardShouldPersistTaps="handled"
+						contentContainerStyle={{ paddingTop: 10, paddingHorizontal: 16, paddingBottom: Math.max(28, insets.bottom + 12), gap: 12 }}
+					>
+						<View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: c.border, alignSelf: 'center' }} />
 
-					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-						<View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: c.success, alignItems: 'center', justifyContent: 'center' }}>
-							<TickIcon size={22} color={fixed.white} strokeWidth={2.2} />
+						<View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+							<View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: c.success, alignItems: 'center', justifyContent: 'center' }}>
+								<TickIcon size={22} color={fixed.white} strokeWidth={2.2} />
+							</View>
+							<View style={{ flex: 1, gap: 1 }}>
+								<Text style={{ fontSize: fs.h3, lineHeight: 28.6, fontFamily: fontFamily(800), color: c.ink }}>{t('Проверьте и отправьте')}</Text>
+								<Text numberOfLines={1} style={{ fontSize: fs.md, lineHeight: 20, fontFamily: fontFamily(400), color: c.muted }}>
+									{data ? [data.buyerName, data.car.label].filter(Boolean).join(' · ') : ' '}
+								</Text>
+							</View>
 						</View>
-						<View style={{ flex: 1, gap: 1 }}>
-							<Text style={{ fontSize: fs.h3, lineHeight: 28.6, fontFamily: fontFamily(800), color: c.ink }}>{t('Проверьте и отправьте')}</Text>
-							<Text numberOfLines={1} style={{ fontSize: fs.md, lineHeight: 20, fontFamily: fontFamily(400), color: c.muted }}>
-								{data ? [data.buyerName, data.car.label].filter(Boolean).join(' · ') : ' '}
-							</Text>
-						</View>
-					</View>
 
-					{/* The request itself stays in sight while answering: the words, the buyer's voice, the photos. */}
-					{data && (!isPlaceholderText(data.text) || data.voice || data.photos.length) ? (
-						<View style={{ borderRadius: 16, backgroundColor: c.surface, padding: 12, gap: 8 }}>
-							{isPlaceholderText(data.text) ? null : (
-								<Text style={{ fontSize: fs.lg, lineHeight: 22, fontFamily: fontFamily(600), color: c.ink }}>{data.text}</Text>
-							)}
-							{data.voice ? <VoicePlayer voice={data.voice} background={c.card} /> : null}
-							<MediaStrip media={photosAsMedia(data.photos)} />
-						</View>
-					) : null}
+						{/* The request itself stays in sight while answering: the words, the buyer's voice, the photos. */}
+						{data && (!isPlaceholderText(data.text) || data.voice || data.photos.length) ? (
+							<View style={{ borderRadius: 16, backgroundColor: c.surface, padding: 12, gap: 8 }}>
+								{isPlaceholderText(data.text) ? null : (
+									<Text style={{ fontSize: fs.lg, lineHeight: 22, fontFamily: fontFamily(600), color: c.ink }}>{data.text}</Text>
+								)}
+								{data.voice ? <VoicePlayer voice={data.voice} background={c.card} /> : null}
+								<MediaStrip media={photosAsMedia(data.photos)} />
+							</View>
+						) : null}
 
-					{note.recording || note.uploading ? (
-						<VoiceRecordingPanel seconds={note.seconds} uploading={note.uploading} onDone={note.stop} onCancel={note.cancel} />
-					) : voice ? (
-						<VoiceResultPanel voice={voice} onRerecord={rerecord} />
-					) : (
-						<Pressable
-							onPress={note.start}
+						{note.recording || note.uploading ? (
+							<VoiceRecordingPanel seconds={note.seconds} uploading={note.uploading} onDone={note.stop} onCancel={note.cancel} />
+						) : voice ? (
+							<VoiceResultPanel voice={voice} onRerecord={rerecord} />
+						) : (
+							<Pressable
+								onPress={note.start}
+								style={{
+									height: 48,
+									borderRadius: 14,
+									backgroundColor: c.brandTint,
+									flexDirection: 'row',
+									alignItems: 'center',
+									justifyContent: 'center',
+									gap: 8,
+								}}
+							>
+								<MicIcon size={20} color={c.brandStrong} />
+								<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Сказать голосом')}</Text>
+							</Pressable>
+						)}
+						{note.error ? <Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{note.error}</Text> : null}
+
+						<Label>{t('Ваш ответ')}</Label>
+
+						<View
 							style={{
-								height: 48,
+								height: 64,
+								borderRadius: 16,
+								borderWidth: 2.5,
+								borderColor: amount > 0 ? c.success : c.border,
+								paddingHorizontal: 16,
+								flexDirection: 'row',
+								alignItems: 'center',
+								gap: 8,
+							}}
+						>
+							<TextInput
+								value={amount > 0 ? formatNumber(amount) : price}
+								onChangeText={(text) => setPrice(text.replace(/\D/g, '').slice(0, 7))}
+								keyboardType="number-pad"
+								placeholder={t('Цена')}
+								placeholderTextColor={c.fillInk}
+								style={{ minWidth: 40, fontSize: fs.hero, fontFamily: fontFamily(800), letterSpacing: -0.64, color: c.ink, padding: 0 }}
+							/>
+							<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.muted }}>{t('сом')}</Text>
+						</View>
+
+						<View style={{ flexDirection: 'row', gap: 8 }}>
+							<Choice label={t('Новая')} active={condition === 'NEW'} onPress={() => setCondition('NEW')} />
+							<Choice label={t('Б/у')} active={condition === 'USED'} onPress={() => setCondition('USED')} />
+						</View>
+						<View style={{ flexDirection: 'row', gap: 8 }}>
+							<Choice label={t('Оригинал')} active={original === true} onPress={() => setOriginal(true)} />
+							<Choice label={t('Копия')} active={original === false} onPress={() => setOriginal(false)} />
+						</View>
+
+						{reply.error ? <Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{reply.error.message}</Text> : null}
+
+						<Pressable
+							disabled={!(amount > 0) || reply.isPending || note.recording || note.uploading}
+							onPress={send}
+							style={{
+								height: 58,
 								borderRadius: 14,
-								backgroundColor: c.brandTint,
+								backgroundColor: c.brand,
 								flexDirection: 'row',
 								alignItems: 'center',
 								justifyContent: 'center',
 								gap: 8,
+								opacity: amount > 0 && !reply.isPending ? 1 : 0.4,
 							}}
 						>
-							<MicIcon size={20} color={c.brandStrong} />
-							<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Сказать голосом')}</Text>
+							<PlaneIcon size={20} color={fixed.white} />
+							<Text style={{ fontSize: fs.xl, fontFamily: fontFamily(700), color: fixed.white }}>{t('Отправить покупателю')}</Text>
 						</Pressable>
-					)}
-					{note.error ? <Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{note.error}</Text> : null}
-
-					<Label>{t('Ваш ответ')}</Label>
-
-					<View
-						style={{
-							height: 64,
-							borderRadius: 16,
-							borderWidth: 2.5,
-							borderColor: amount > 0 ? c.success : c.border,
-							paddingHorizontal: 16,
-							flexDirection: 'row',
-							alignItems: 'center',
-							gap: 8,
-						}}
-					>
-						<TextInput
-							value={amount > 0 ? formatNumber(amount) : price}
-							onChangeText={(text) => setPrice(text.replace(/\D/g, '').slice(0, 7))}
-							keyboardType="number-pad"
-							placeholder={t('Цена')}
-							placeholderTextColor={c.fillInk}
-							style={{ minWidth: 40, fontSize: fs.hero, fontFamily: fontFamily(800), letterSpacing: -0.64, color: c.ink, padding: 0 }}
-						/>
-						<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.muted }}>{t('сом')}</Text>
-					</View>
-
-					<View style={{ flexDirection: 'row', gap: 8 }}>
-						<Choice label={t('Новая')} active={condition === 'NEW'} onPress={() => setCondition('NEW')} />
-						<Choice label={t('Б/у')} active={condition === 'USED'} onPress={() => setCondition('USED')} />
-					</View>
-					<View style={{ flexDirection: 'row', gap: 8 }}>
-						<Choice label={t('Оригинал')} active={original === true} onPress={() => setOriginal(true)} />
-						<Choice label={t('Копия')} active={original === false} onPress={() => setOriginal(false)} />
-					</View>
-
-					{reply.error ? <Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{reply.error.message}</Text> : null}
-
-					<Pressable
-						disabled={!(amount > 0) || reply.isPending || note.recording || note.uploading}
-						onPress={send}
-						style={{
-							height: 58,
-							borderRadius: 14,
-							backgroundColor: c.brand,
-							flexDirection: 'row',
-							alignItems: 'center',
-							justifyContent: 'center',
-							gap: 8,
-							opacity: amount > 0 && !reply.isPending ? 1 : 0.4,
-						}}
-					>
-						<PlaneIcon size={20} color={fixed.white} />
-						<Text style={{ fontSize: fs.xl, fontFamily: fontFamily(700), color: fixed.white }}>{t('Отправить покупателю')}</Text>
-					</Pressable>
+					</ScrollView>
 				</View>
 			</KeyboardAvoidingView>
 		</View>
