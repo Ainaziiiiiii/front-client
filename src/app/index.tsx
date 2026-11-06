@@ -104,7 +104,8 @@ export default function PhoneScreen() {
 			}
 			header={
 				// The brand card: a pre-rendered 3D loop (the logo comes apart like a watch), the name over it
-				<View style={{ marginTop: 12, borderRadius: 28, overflow: 'hidden', aspectRatio: 1086 / 690, backgroundColor: fixed.brandCard }}>
+				// Fills the header block edge to edge: with only aspectRatio, a short block made the card narrower and it hugged the left side.
+				<View style={{ flex: 1, alignSelf: 'stretch', marginTop: 12, borderRadius: 28, overflow: 'hidden', backgroundColor: fixed.brandCard }}>
 					<Image source={require('../../assets/video/login-poster.jpg')} style={{ position: 'absolute', width: '100%', height: '100%' }} />
 					<VideoView player={logoLoop} nativeControls={false} contentFit="cover" style={{ position: 'absolute', width: '100%', height: '100%' }} />
 					<View style={{ position: 'absolute', left: 0, right: 0, bottom: 16, alignItems: 'center', gap: 2 }}>

@@ -5,7 +5,8 @@ import { fixed, fontFamily, fs, useColors } from '@/theme'
 import type { IconProps } from '@/components/icons'
 
 /**
- * Нижнее меню из макета: контент 72px + верхняя граница 2px + отступ 8px сверху.
+ * Нижнее меню из макета: контент 72px + верхняя граница 2px + отступ 8px сверху. Отступ под системные кнопки
+ * (home indicator iPhone, «назад / домой» Android) добавляется к высоте, а не съедает её.
  * Активная вкладка — капсула 56×30 на brand-tint, иконка и подпись brand-strong weight 700.
  */
 export function TabBarContainer({ children }: { children: React.ReactNode }) {
@@ -14,7 +15,7 @@ export function TabBarContainer({ children }: { children: React.ReactNode }) {
 	return (
 		<View
 			style={{
-				height: 72,
+				height: 72 + insets.bottom,
 				paddingTop: 8,
 				paddingHorizontal: 4,
 				paddingBottom: insets.bottom,
