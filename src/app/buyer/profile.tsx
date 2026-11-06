@@ -73,7 +73,8 @@ function BuyerProfileScreen() {
 			<ScrollView contentContainerStyle={{ paddingTop: 4, paddingHorizontal: 16, paddingBottom: 16, gap: 10 }} showsVerticalScrollIndicator={false}>
 				<QueryErrorBanner error={me.error ?? deleteCar.error} onRetry={() => me.refetch()} />
 
-				<View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 4, paddingBottom: 8 }}>
+				{/* Tap — photo, name and city [profile-edit]. */}
+				<Pressable onPress={() => router.push('/profile-edit')} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingTop: 4, paddingBottom: 8 }}>
 					{user?.avatarUrl ? (
 						<Image source={{ uri: resolveUrl(user.avatarUrl) }} style={{ width: 56, height: 56, borderRadius: 28 }} />
 					) : (
@@ -83,9 +84,12 @@ function BuyerProfileScreen() {
 					)}
 					<View style={{ flex: 1, gap: 2 }}>
 						<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.ink }}>{user ? (user.name ?? t('Без имени')) : ' '}</Text>
-						<Text style={{ fontSize: fs.base, fontFamily: fontFamily(400), color: c.muted }}>{user ? formatE164(user.phone) : ' '}</Text>
+						<Text style={{ fontSize: fs.base, fontFamily: fontFamily(400), color: c.muted }}>
+							{user ? [formatE164(user.phone), user.city].filter(Boolean).join(' · ') : ' '}
+						</Text>
 					</View>
-				</View>
+					<Text style={{ fontSize: fs.md, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Изменить')}</Text>
+				</Pressable>
 
 				<Caps>{t('Мои машины')}</Caps>
 				{(cars.data ?? []).filter((car) => !hidden.includes(car.id)).map((car) => (

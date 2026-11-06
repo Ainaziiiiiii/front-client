@@ -5201,6 +5201,7 @@ export interface components {
             id: number;
             phone: string;
             name: string | null;
+            city: string | null;
             avatarUrl: string | null;
             /** @enum {string} */
             role: "BUYER" | "SELLER" | "MASTER";
@@ -7252,6 +7253,7 @@ export interface components {
             lang?: "RU" | "KG";
             /** Format: int64 */
             avatarMediaId?: number;
+            city?: string;
         };
         UpdateSettingsRequest: {
             notifyReplies?: boolean;
