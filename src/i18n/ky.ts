@@ -856,4 +856,6 @@ export const ky: Record<string, string> = {
 	'Нарын': 'Нарын',
 	'Талас': 'Талас',
 	'Баткен': 'Баткен',
+	'Код из WhatsApp': 'WhatsApp\'тан келген код',
+	'Отправим код в WhatsApp': 'Кодду WhatsApp\'ка жөнөтөбүз',
 }

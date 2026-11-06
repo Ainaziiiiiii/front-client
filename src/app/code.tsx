@@ -85,7 +85,7 @@ export default function CodeScreen() {
 				</Pressable>
 			}
 			header={
-				<Text style={{ fontSize: fs.hero, lineHeight: 40, fontFamily: fontFamily(800), letterSpacing: -0.64, color: c.ink }}>{t('Код из SMS')}</Text>
+				<Text style={{ fontSize: fs.hero, lineHeight: 40, fontFamily: fontFamily(800), letterSpacing: -0.64, color: c.ink }}>{t('Код из WhatsApp')}</Text>
 			}
 			label={t('Отправили на {0}', formatE164(phone))}
 			field={

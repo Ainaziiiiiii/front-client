@@ -157,7 +157,7 @@ export default function PhoneScreen() {
 				error ? (
 					<Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{error.message}</Text>
 				) : (
-					<Text style={{ fontSize: fs.md, fontFamily: fontFamily(400), color: c.muted }}>{t('Отправим SMS с кодом')}</Text>
+					<Text style={{ fontSize: fs.md, fontFamily: fontFamily(400), color: c.muted }}>{t('Отправим код в WhatsApp')}</Text>
 				)
 			}
 			footer={
