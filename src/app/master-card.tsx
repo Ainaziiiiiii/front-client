@@ -13,6 +13,7 @@ import { useMasterByLink, useMasterPublic, useMasterReviews, useServiceTypes } f
 import { ORIGINS } from '@/store/useServiceDraft'
 import { ComplainLink, ComplaintSheet, type ComplaintTarget } from '@/components/complaint-sheet'
 import { t } from '@/i18n'
+import { requireSignIn } from '@/components/sign-in-prompt'
 
 /** Filled rating stars — gold, the empty ones stay grey. */
 const STAR = fixed.star
@@ -44,6 +45,7 @@ export default function MasterCardScreen() {
 
 	const write = () =>
 		master &&
+		requireSignIn(t('Чтобы написать мастеру, войдите по номеру телефона.')) &&
 		openChat.mutate(
 			{ masterId: master.id, serviceRequestId: params.serviceRequestId ? Number(params.serviceRequestId) : undefined },
 			{ onSuccess: (chat) => router.push({ pathname: '/chat', params: { chatId: String(chat.id) } }) }

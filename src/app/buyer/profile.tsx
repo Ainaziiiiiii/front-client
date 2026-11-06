@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { API_URL } from '@/lib/env'
 import { BottomSheet, QueryErrorBanner, ScreenHeader, SettingsRow, Toggle, undoToast } from '@/components/ui'
-import { CloseIcon, HeartIcon, RequestsIcon } from '@/components/icons'
+import { CloseIcon, HeartIcon, ProfileIcon, RequestsIcon } from '@/components/icons'
 import { BrandLogo } from '@/components/ui/brand'
 import { BellIcon, Caps, ChevronIcon, GlobeIcon, HelpIcon, PlusThinIcon } from '@/components/buyer-v23'
 import { fixed, fontFamily, fs, useColors } from '@/theme'
@@ -16,11 +16,28 @@ import { useCars, useDeleteCar } from '@/api/garage'
 import { toLang, useSession } from '@/store/useSession'
 import { openSupport } from '@/lib/support'
 import { t } from '@/i18n'
+import { SignInPrompt } from '@/components/sign-in-prompt'
+import { useSignedIn } from '@/api/catalog'
 
 /** «Помощь в WhatsApp» — the support number from the build config (digits, e.g. 996555000000). */
 
 /** 10 «Профиль»: name and phone, cars, language, notifications, help. */
-export default function BuyerProfileScreen() {
+/** «Профиль»: a guest gets «Войти» — the garage, favourites and requests belong to an account. */
+export default function BuyerProfileTab() {
+	const signedIn = useSignedIn()
+	if (!signedIn) {
+		return (
+			<SignInPrompt
+				icon={ProfileIcon}
+				title={t('Профиль')}
+				text={t('Войдите по номеру телефона: ваши машины, избранное и запросы будут здесь. Смотреть запчасти и магазины можно и без входа.')}
+			/>
+		)
+	}
+	return <BuyerProfileScreen />
+}
+
+function BuyerProfileScreen() {
 	const c = useColors()
 	const insets = useSafeAreaInsets()
 	const me = useMe()

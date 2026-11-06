@@ -62,6 +62,9 @@ export default function PhoneScreen() {
 		})
 	}
 
+	// Opened from inside the app (a guest tapped «Войти») — back to where they were; on start — into the catalog.
+	const browseAsGuest = () => (router.canGoBack() ? router.back() : router.replace('/buyer'))
+
 	const error = sendOtp.error instanceof ApiError && sendOtp.error.code !== 'OTP_COOLDOWN' ? sendOtp.error : null
 
 	return (
@@ -160,6 +163,10 @@ export default function PhoneScreen() {
 			footer={
 				<View style={{ gap: 12 }}>
 					<Button label={t('Получить код')} disabled={!isValidLocalPhone(phone)} loading={sendOtp.isPending} onPress={submit} />
+					{/* Browsing needs no account (App Store 5.1.1(v)): parts, shops and videos — sign in only to ask or write. */}
+					<Pressable onPress={browseAsGuest} hitSlop={8} style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}>
+						<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Смотреть без входа')}</Text>
+					</Pressable>
 					{/* Entering means accepting the rules (App Store 1.2: user content needs agreed terms). */}
 					<Text style={{ fontSize: fs.xs, lineHeight: 19, fontFamily: fontFamily(400), color: c.muted, textAlign: 'center' }}>
 						{t('Продолжая, вы принимаете')}{' '}

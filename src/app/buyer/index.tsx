@@ -32,6 +32,7 @@ import { useSignedIn } from '@/api/catalog'
 import { useDeliveryOrders } from '@/api/delivery'
 import type { DeliveryOrder } from '@/api/types'
 import { t } from '@/i18n'
+import { openSignIn, requireSignIn } from '@/components/sign-in-prompt'
 
 /** «Нужен мастер?» [03]: three services → the one-screen request [16], «Все услуги» → choose there. */
 const HOME_SERVICES: { code: string; label: string; icon: ComponentType<{ size?: number; color: string; strokeWidth?: number }> }[] = [
@@ -51,10 +52,10 @@ export default function BuyerHomeScreen() {
 	useScrollToTop(list)
 	const insets = useSafeAreaInsets()
 	const me = useMe()
-	const cars = useCars()
+	const signedIn = useSignedIn()
+	const cars = useCars(signedIn)
 	const requests = useMyRequests()
 	const services = useMyServiceRequests()
-	const signedIn = useSignedIn()
 	const delivery = useDeliveryOrders('BUYER', signedIn)
 	const parcels = delivery.data ?? []
 	// refetch() runs even a disabled query — a guest has no parcels to ask for.
@@ -76,7 +77,7 @@ export default function BuyerHomeScreen() {
 				{/* No car yet — «Добавить»; switching cars is not on the home screen. */}
 				{car ? null : (
 					<Pressable
-						onPress={() => router.push('/garage-add')}
+						onPress={() => (signedIn ? router.push('/garage-add') : openSignIn())}
 						style={{
 							height: 36,
 							paddingHorizontal: 12,
@@ -101,7 +102,7 @@ export default function BuyerHomeScreen() {
 				showsVerticalScrollIndicator={false}
 				refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={c.muted} />}
 			>
-				<Pressable onPress={() => router.push('/search-part')}>
+				<Pressable onPress={() => requireSignIn() && router.push('/search-part')}>
 					<LinearGradient
 						colors={fixed.brandGradient}
 						start={{ x: 0.25, y: 0 }}
@@ -147,14 +148,14 @@ export default function BuyerHomeScreen() {
 							key={code}
 							label={label}
 							icon={<Icon size={22} color={c.brandStrong} strokeWidth={2} />}
-							onPress={() => router.push({ pathname: '/service-new', params: { service: code } })}
+							onPress={() => requireSignIn(t('Чтобы позвать мастера, войдите по номеру телефона.')) && router.push({ pathname: '/service-new', params: { service: code } })}
 						/>
 					))}
 					<ServiceTile
 						label={t('Все услуги')}
 						muted
 						icon={<PlusThinIcon size={22} color={c.ink} />}
-						onPress={() => router.push('/service-new')}
+						onPress={() => requireSignIn(t('Чтобы позвать мастера, войдите по номеру телефона.')) && router.push('/service-new')}
 					/>
 				</View>
 

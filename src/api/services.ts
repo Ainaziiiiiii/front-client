@@ -101,7 +101,9 @@ export function useCreateServiceRequest() {
 // ─── Buyer: my requests, offers, stats [05б, 37] ─────────────────────────────
 
 export function useMyServiceRequests() {
+	const signedIn = useSession((s) => s.status === 'authed')
 	return useInfiniteQuery({
+		enabled: signedIn,
 		queryKey: serviceKeys.my,
 		queryFn: ({ pageParam, signal }) => apiFetch<ServiceRequestSummaryPage>('/service-requests/my', { query: { cursor: pageParam }, signal }),
 		...cursorPaging,

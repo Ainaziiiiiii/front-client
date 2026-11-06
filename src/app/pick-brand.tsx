@@ -12,6 +12,7 @@ import type { Brand } from '@/api/types'
 import { toPartFilters, useCatalogFilters } from '@/store/useCatalogFilters'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { requireSignIn } from '@/components/sign-in-prompt'
 
 /** 28 «Марка авто» — for the catalog when the car is not in the garage. */
 export default function PickBrandScreen() {
@@ -217,7 +218,7 @@ export default function PickBrandScreen() {
 						</Pressable>
 					</View>
 
-					<Text onPress={() => router.push('/garage-add')} style={{ fontSize: fs.xs, fontFamily: fontFamily(400), color: c.muted }}>
+					<Text onPress={() => requireSignIn(t('Чтобы сохранить машину в гараж, войдите по номеру телефона.')) && router.push('/garage-add')} style={{ fontSize: fs.xs, fontFamily: fontFamily(400), color: c.muted }}>
 						Добавить эту машину в <Text style={{ fontFamily: fontFamily(700), color: c.brandStrong }}>Мой гараж</Text>
 					</Text>
 				</View>

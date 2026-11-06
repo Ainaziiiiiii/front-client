@@ -18,6 +18,7 @@ import type {
 	ReviewTag,
 	WidenResult,
 } from './types'
+import { useSession } from '@/store/useSession'
 
 // ─── Sending [06, 06б, 31] ───────────────────────────────────────────────────
 
@@ -75,7 +76,9 @@ export function useCreateRequest() {
 
 /** «Мои запросы» [05] — badge comes from `state`. */
 export function useMyRequests(status?: RequestStatus) {
+	const signedIn = useSession((s) => s.status === 'authed')
 	return useInfiniteQuery({
+		enabled: signedIn,
 		queryKey: requestKeys.my(status),
 		queryFn: ({ pageParam, signal }) =>
 			apiFetch<RequestSummaryPage>('/requests/my', { query: { status, cursor: pageParam }, signal }),

@@ -21,6 +21,7 @@ import { useRecentSearches } from '@/store/useRecentSearches'
 import { briefPlace } from '@/lib/shop-place'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { requireSignIn } from '@/components/sign-in-prompt'
 
 const SORTS: { value: CatalogSort; label: string }[] = [
 	{ value: 'PRICE_ASC', label: t('Дешевле') },
@@ -41,7 +42,7 @@ export function CatalogScreen() {
 	const insets = useSafeAreaInsets()
 	const signedIn = useSignedIn()
 	const f = useCatalogFilters()
-	const cars = useCars()
+	const cars = useCars(signedIn)
 	const categories = useCategories()
 	const [text, setText] = useState(f.q)
 	const [focused, setFocused] = useState(false)
@@ -322,6 +323,7 @@ export function CatalogScreen() {
 							action={{
 								label: t('Спросить у продавцов'),
 								onPress: () =>
+									requireSignIn() &&
 									router.push({
 										pathname: '/search-part',
 										params: { ...(f.q.trim() ? { text: f.q.trim() } : {}), ...(carId ? { carId: String(carId) } : {}) },
@@ -336,6 +338,7 @@ export function CatalogScreen() {
 
 			<Pressable
 				onPress={() =>
+					requireSignIn() &&
 					router.push({
 						pathname: '/search-part',
 						params: { text: f.q.trim() || undefined, carId: carId ? String(carId) : undefined },

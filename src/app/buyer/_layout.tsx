@@ -3,11 +3,13 @@ import { TabBarContainer, TabButton } from '@/components/tab-bar'
 import { useUnread } from '@/api/chats'
 import { ChatIcon, HomeIcon, ProfileIcon, SearchIcon } from '@/components/icons'
 import { t } from '@/i18n'
+import { useSignedIn } from '@/api/catalog'
 
 /** Buyer tabs: Главная · Запчасти · Чаты · Профиль (карта рынка пока убрана). «Мои запросы» — на главной [03]. */
 export default function BuyerLayout() {
 	// Unread chats for this side — counted on the server, kept live by the UNREAD event.
-	const unread = useUnread().data?.asBuyer ?? 0
+	const signedIn = useSignedIn()
+	const unread = useUnread(signedIn).data?.asBuyer ?? 0
 
 	return (
 		<Tabs>
