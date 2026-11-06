@@ -25,6 +25,7 @@ import { MediaViewer } from '@/components/media-viewer'
 import { photosAsMedia } from '@/components/media-strip'
 import { openShopRoute, shopPlace } from '@/lib/shop-place'
 import { t } from '@/i18n'
+import { formatOpenNow } from '@/lib/hours'
 
 const CONDITION: Record<PartCondition, string> = { NEW: t('Новое'), USED: t('Б/У'), ON_ORDER: t('Под заказ') }
 
@@ -246,6 +247,14 @@ export default function PartScreen() {
 							) : (
 								<Text numberOfLines={1} style={{ fontSize: fs.sm, fontFamily: fontFamily(400), color: c.muted }}>{shopPlace(shop)}</Text>
 							)}
+							{(() => {
+								const now = formatOpenNow(shop.open)
+								return (
+									<Text numberOfLines={1} style={{ fontSize: fs.sm, fontFamily: fontFamily(600), color: now.open ? c.success : c.danger }}>
+										{now.label}
+									</Text>
+								)
+							})()}
 						</View>
 						<Text style={{ fontSize: fs.h3, color: c.muted }}>›</Text>
 					</Pressable>
@@ -316,14 +325,19 @@ export default function PartScreen() {
 	)
 }
 
-/** «Похожие запчасти»: the same category (for the chosen car, if any), otherwise just other parts — two columns. */
+/**
+ * «Похожие запчасти»: the same category for the chosen car; too few of those — topped up with other parts for
+ * the same car, so the block is there under almost every part. Two columns.
+ */
 function Similar({ partId, categoryId, car }: { partId: number; categoryId?: number; car: Pick<PartFilters, 'carId' | 'brandId' | 'modelId'> }) {
 	const c = useColors()
 	const search = useSearchParts({ ...car, categoryId })
-	const items = flattenPages(search.data)
-		.filter((item) => item.id !== partId)
+	const sameCar = useSearchParts(car)
+	const seen = new Set([partId])
+	const items = [...flattenPages(search.data), ...flattenPages(sameCar.data)]
+		.filter((item) => !seen.has(item.id) && Boolean(seen.add(item.id)))
 		.slice(0, 6)
-	if (search.isLoading)
+	if (search.isLoading && sameCar.isLoading)
 		return (
 			<View style={{ gap: 12, paddingTop: 8 }}>
 				<Skeleton width={190} height={22} />

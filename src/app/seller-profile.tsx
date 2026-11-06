@@ -11,6 +11,7 @@ import { openWhatsApp } from '@/lib/whatsapp'
 import { fixed, fontFamily, fs, sectionTitle, useColors } from '@/theme'
 import { resolveUrl } from '@/lib/api'
 import { formatDay, formatSide, plural } from '@/lib/format'
+import { formatOpenNow, formatSchedule } from '@/lib/hours'
 import { flattenPages } from '@/api/pagination'
 import { usePublicShop, useShop, useShopParts, useShopReviews, useSignedIn, useToggleShopFavorite } from '@/api/catalog'
 import { useOpenChat } from '@/api/chats'
@@ -23,7 +24,6 @@ import { t } from '@/i18n'
 const STAR = fixed.star
 
 type Tab = 'parts' | 'reviews'
-const VISIBLE_BRANDS = 4
 
 /** 30 — shop profile for buyers. `id`, or `publicId` from a share link /s/{publicId}. */
 export default function SellerProfileForBuyerScreen() {
@@ -41,8 +41,8 @@ export default function SellerProfileForBuyerScreen() {
 
 	const [tab, setTab] = useState<Tab>('parts')
 	const [complaint, setComplaint] = useState<ComplaintTarget | null>(null)
-	const [showAllBrands, setShowAllBrands] = useState(false)
-	const parts = useShopParts(shopId)
+	const [categoryId, setCategoryId] = useState<number | null>(null)
+	const parts = useShopParts(shopId, categoryId ? { categoryId } : {})
 	const reviews = useShopReviews(shopId, tab === 'reviews')
 	const favorite = useToggleShopFavorite(shopId)
 	const openChat = useOpenChat()
@@ -53,6 +53,8 @@ export default function SellerProfileForBuyerScreen() {
 	const reviewItems = flattenPages(reviews.data).filter((review) => review.tags.length > 0 || review.reply)
 	const brands = shop?.brands ?? []
 	const counts = shop?.counts
+	const openNow = shop ? formatOpenNow(shop.open) : null
+	const partCategories = shop?.partCategories ?? []
 
 	const route = () => shop && openShopRoute(shop)
 	const write = () =>
@@ -150,6 +152,16 @@ export default function SellerProfileForBuyerScreen() {
 					</View>
 					)}
 
+					{shop && openNow ? (
+						<View style={{ gap: 2 }}>
+							<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+								<View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: openNow.open ? c.success : c.danger }} />
+								<Text style={{ fontSize: fs.base, fontFamily: fontFamily(700), color: openNow.open ? c.success : c.danger }}>{openNow.label}</Text>
+							</View>
+							<Text style={{ fontSize: fs.md, fontFamily: fontFamily(400), color: c.muted, paddingLeft: 17 }}>{formatSchedule(shop.open)}</Text>
+						</View>
+					) : null}
+
 					{loading ? (
 						<Skeleton height={128} radius={16} />
 					) : (
@@ -179,44 +191,19 @@ export default function SellerProfileForBuyerScreen() {
 					{brands.length ? (
 						<View style={{ gap: 8 }}>
 							<Text style={{ ...sectionTitle, color: c.inkSecondary }}>{t('Продаёт для марок')}</Text>
-							{showAllBrands ? (
-								// all brands as chips: logo + name
-								<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-									{brands.map((brand) => (
-										<View
-											key={brand.id}
-											style={{ height: 32, paddingLeft: 4, paddingRight: 10, borderRadius: 16, backgroundColor: c.card, flexDirection: 'row', alignItems: 'center', gap: 6 }}
-										>
-											<BrandLogo brand={brand} size={24} />
-											<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(600), color: c.ink }}>{brand.name}</Text>
-										</View>
-									))}
-								</View>
-							) : (
-								// a tap on the logos (or «+N») shows every brand
-								<Pressable onPress={() => setShowAllBrands(true)} disabled={brands.length <= VISIBLE_BRANDS} style={{ flexDirection: 'row' }}>
-									{brands.slice(0, VISIBLE_BRANDS).map((brand, i) => (
-										<View key={brand.id} style={{ marginLeft: i === 0 ? 0 : -8 }}>
-											<BrandLogo brand={brand} size={36} />
-										</View>
-									))}
-									{brands.length > VISIBLE_BRANDS ? (
-										<View
-											style={{
-												marginLeft: -8,
-												height: 36,
-												paddingHorizontal: 10,
-												borderRadius: 18,
-												backgroundColor: c.card,
-												alignItems: 'center',
-												justifyContent: 'center',
-											}}
-										>
-											<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(700), color: c.brandStrong }}>+{brands.length - VISIBLE_BRANDS}</Text>
-										</View>
-									) : null}
-								</Pressable>
-							)}
+							<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ marginHorizontal: -16 }}>
+								<View style={{ width: 8 }} />
+								{brands.map((brand) => (
+									<View
+										key={brand.id}
+										style={{ height: 44, paddingLeft: 6, paddingRight: 14, borderRadius: 22, backgroundColor: c.card, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+									>
+										<BrandLogo brand={brand} size={32} />
+										<Text style={{ fontSize: fs.base, fontFamily: fontFamily(600), color: c.ink }}>{brand.name}</Text>
+									</View>
+								))}
+								<View style={{ width: 8 }} />
+							</ScrollView>
 						</View>
 					) : null}
 
@@ -252,6 +239,26 @@ export default function SellerProfileForBuyerScreen() {
 							</Pressable>
 						))}
 					</View>
+
+					{tab === 'parts' && partCategories.length > 1 ? (
+						<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ marginHorizontal: -16 }}>
+							<View style={{ width: 8 }} />
+							{[{ id: null, name: t('Все'), count: counts?.parts ?? 0 }, ...partCategories].map((category) => {
+								const selected = category.id === categoryId
+								return (
+									<Pressable
+										key={category.id ?? 'all'}
+										onPress={() => setCategoryId(category.id)}
+										style={{ height: 38, paddingHorizontal: 14, borderRadius: 19, backgroundColor: selected ? c.brand : c.card, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+									>
+										<Text style={{ fontSize: fs.base, fontFamily: fontFamily(selected ? 700 : 600), color: selected ? fixed.white : c.ink }}>{category.name}</Text>
+										<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(600), color: selected ? fixed.white : c.muted }}>{category.count}</Text>
+									</Pressable>
+								)
+							})}
+							<View style={{ width: 8 }} />
+						</ScrollView>
+					) : null}
 
 					{tab === 'parts' ? (
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 10, rowGap: 20, paddingBottom: 24 }}>

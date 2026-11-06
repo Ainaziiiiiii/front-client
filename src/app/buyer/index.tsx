@@ -1,6 +1,5 @@
-import { useRef, useState, type ComponentType, type ReactNode } from 'react'
+import { useRef, type ComponentType, type ReactNode } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View, type ScrollViewInstance } from 'react-native'
-import { onNearEnd } from '@/lib/scroll'
 import { Image } from '@/components/ui/image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -9,7 +8,6 @@ import { resolveUrl } from '@/lib/api'
 import { usePullRefresh } from '@/lib/use-pull-refresh'
 import { QueryErrorBanner, Skeleton, SkeletonRepeat } from '@/components/ui'
 import {
-	BoxOutlineIcon,
 	Caps,
 	ChevronIcon,
 	LiveDot,
@@ -19,24 +17,21 @@ import {
 	TowIcon,
 	WheelIcon,
 	WrenchIcon,
-	priceDigits,
 } from '@/components/buyer-v23'
 import { TruckIcon, deliveryStatusText } from '@/components/video-v23'
 import { MarketVideos } from '@/components/market-videos'
 import { RecentlyViewed } from '@/components/recently-viewed'
+import { MyRequestItem, mergeRequests } from '@/components/my-requests'
 import { fixed, fontFamily, fs, useColors } from '@/theme'
-import { minutesLeft, plural } from '@/lib/format'
 import { useMe } from '@/api/me'
 import { useCars } from '@/api/garage'
 import { useMyRequests } from '@/api/requests'
 import { flattenPages } from '@/api/pagination'
-import { serviceName, useMyServiceRequests, useServiceTypes } from '@/api/services'
+import { useMyServiceRequests } from '@/api/services'
 import { useSignedIn } from '@/api/catalog'
 import { useDeliveryOrders } from '@/api/delivery'
-import type { DeliveryOrder, RequestSummary, ServiceRequestSummary } from '@/api/types'
+import type { DeliveryOrder } from '@/api/types'
 import { t } from '@/i18n'
-
-type Row = { kind: 'part'; request: RequestSummary } | { kind: 'service'; request: ServiceRequestSummary }
 
 /** «Нужен мастер?» [03]: three services → the one-screen request [16], «Все услуги» → choose there. */
 const HOME_SERVICES: { code: string; label: string; icon: ComponentType<{ size?: number; color: string; strokeWidth?: number }> }[] = [
@@ -59,17 +54,13 @@ export default function BuyerHomeScreen() {
 	const cars = useCars()
 	const requests = useMyRequests()
 	const services = useMyServiceRequests()
-	const [all, setAll] = useState(false)
 	const signedIn = useSignedIn()
 	const delivery = useDeliveryOrders('BUYER', signedIn)
 	const parcels = delivery.data ?? []
 	// refetch() runs even a disabled query — a guest has no parcels to ask for.
 	const pull = usePullRefresh(() => [cars.refetch(), requests.refetch(), services.refetch(), signedIn && delivery.refetch()])
 	// Parts requests and service requests in one list, newest first.
-	const items: Row[] = [
-		...flattenPages(requests.data).map((request) => ({ kind: 'part' as const, request })),
-		...flattenPages(services.data).map((request) => ({ kind: 'service' as const, request })),
-	].sort((a, b) => b.request.createdAt.localeCompare(a.request.createdAt))
+	const items = mergeRequests(flattenPages(requests.data), flattenPages(services.data))
 	const car = cars.data?.find((item) => item.isPrimary) ?? cars.data?.[0]
 	const name = me.data?.name
 
@@ -108,12 +99,6 @@ export default function BuyerHomeScreen() {
 				ref={list}
 				contentContainerStyle={{ paddingTop: 4, paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}
 				showsVerticalScrollIndicator={false}
-				scrollEventThrottle={200}
-				onScroll={onNearEnd(() => {
-					if (!all) return
-					if (requests.hasNextPage && !requests.isFetchingNextPage) requests.fetchNextPage()
-					if (services.hasNextPage && !services.isFetchingNextPage) services.fetchNextPage()
-				})}
 				refreshControl={<RefreshControl refreshing={pull.refreshing} onRefresh={pull.onRefresh} tintColor={c.muted} />}
 			>
 				<Pressable onPress={() => router.push('/search-part')}>
@@ -185,7 +170,7 @@ export default function BuyerHomeScreen() {
 				{items.length ? (
 					<>
 						<View style={{ height: 2 }} />
-						<Caps link={items.length > PREVIEW ? (all ? t('Свернуть') : t('Все')) : undefined} onLink={() => setAll(!all)}>{t('Мои запросы')}</Caps>
+						<Caps link={t('Все')} onLink={() => router.push('/my-requests')}>{t('Мои запросы')}</Caps>
 					</>
 				) : null}
 				<QueryErrorBanner
@@ -202,13 +187,9 @@ export default function BuyerHomeScreen() {
 							</SkeletonRepeat>
 						</>
 					) : null}
-					{(all ? items : items.slice(0, PREVIEW)).map((item) =>
-					item.kind === 'part' ? (
-						<RequestRow key={`part-${item.request.id}`} request={item.request} />
-					) : (
-						<ServiceRow key={`service-${item.request.id}`} request={item.request} />
-					)
-				)}
+					{items.slice(0, PREVIEW).map((item) => (
+						<MyRequestItem key={`${item.kind}-${item.request.id}`} row={item} />
+					))}
 				{requests.isFetchingNextPage || services.isFetchingNextPage ? <RequestCardSkeleton /> : null}
 
 
@@ -337,64 +318,3 @@ function Tile({ children, photo }: { children: ReactNode; photo?: string | null 
 		</View>
 	)
 }
-
-/** A parts request: «Ищем ещё 18 мин», «3 есть · от 2 900 с». */
-function RequestRow({ request }: { request: RequestSummary }) {
-	const c = useColors()
-	const left = minutesLeft(request.expiresAt)
-	const status =
-		request.state === 'CLOSED'
-			? t('Закрыт')
-			: request.status === 'ACTIVE' && left > 0
-				? t('Ищем ещё {0} мин', left)
-				: request.haveCount > 0
-					? t('Время вышло')
-					: t('Пока никто не ответил')
-	const chip =
-		request.haveCount > 0
-			? t('{0} есть', request.haveCount) + (request.minPrice != null ? t(' · от {0} с', priceDigits(request.minPrice)) : '')
-			: undefined
-	return (
-		<RequestCard
-			tile={
-				<Tile photo={request.thumbUrl}>
-					<BoxOutlineIcon size={22} color={c.brandStrong} />
-				</Tile>
-			}
-			title={request.text}
-			status={status}
-			live={request.status === 'ACTIVE' && left > 0}
-			chip={request.state === 'CLOSED' ? undefined : chip}
-			onPress={() => router.push({ pathname: '/request', params: { id: String(request.id) } })}
-		/>
-	)
-}
-
-/** A service request: «Ремонт · 2 мастера ответили». */
-function ServiceRow({ request }: { request: ServiceRequestSummary }) {
-	const c = useColors()
-	const types = useServiceTypes().data
-	const offers = request.canHelpCount
-	const service = serviceName(types, request.service.code, true)
-	const status =
-		request.state === 'CLOSED'
-			? t('{0} · договорились', service)
-			: offers > 0
-				? `${service} · ${offers} ${plural(offers, [t('мастер ответил'), t('мастера ответили'), t('мастеров ответили')])}`
-				: request.status === 'ACTIVE'
-					? t('{0} · ждём мастеров', service)
-					: t('{0} · никто не ответил', service)
-	return (
-		<RequestCard
-			tile={
-				<Tile photo={request.thumbUrl}>
-					<WrenchIcon size={22} color={c.brandStrong} />
-				</Tile>
-			}
-			title={request.description}
-			status={status}
-			onPress={() => router.push({ pathname: '/service-offers', params: { id: String(request.id) } })}
-		/>
-	)
-}
-

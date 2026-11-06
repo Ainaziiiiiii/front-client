@@ -108,6 +108,15 @@ export function useMyServiceRequests() {
 	})
 }
 
+/** «Удалить» в «Моих запросах» для заявки мастерам. */
+export function useDeleteServiceRequest() {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: (id: number) => apiFetch<void>(`/service-requests/${id}`, { method: 'DELETE' }),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: serviceKeys.my }),
+	})
+}
+
 export function useServiceRequest(id: number) {
 	return useQuery({
 		queryKey: serviceKeys.detail(id),

@@ -141,6 +141,15 @@ export function useWidenRequest(id: number) {
 }
 
 /** «Купил — закрыть запрос» with an optional review of the shop [09]. */
+/** «Удалить» в «Моих запросах»: пропадает из списка; открытый закрывается, продавцы его больше не видят. */
+export function useDeleteRequest() {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: (id: number) => apiFetch<void>(`/requests/${id}`, { method: 'DELETE' }),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: requestKeys.myAll }),
+	})
+}
+
 export function useCloseRequest(id: number) {
 	return useRequestAction(id, (body: CloseRequestBody = {}) =>
 		apiFetch<RequestDetail>(`/requests/${id}/close`, { method: 'POST', body })

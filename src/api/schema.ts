@@ -7406,6 +7406,15 @@ export interface components {
             lat: number | null;
             /** Format: double */
             lng: number | null;
+            partCategories: components["schemas"]["ShopPartCategory"][];
+        };
+        ShopPartCategory: {
+            /** Format: int64 */
+            id: number;
+            slug: string;
+            name: string;
+            /** Format: int64 */
+            count: number;
         };
         ServiceRecipientCounts: {
             /** Format: int64 */
@@ -7533,6 +7542,12 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
             thumbUrl: string | null;
+            /** Format: int64 */
+            deliveredCount: number;
+            /** Format: int64 */
+            seenCount: number;
+            /** Format: int64 */
+            notHaveCount: number;
         };
         PartHintDto: {
             /** Format: int64 */

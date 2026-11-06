@@ -26,6 +26,7 @@ import type { MyPartItem, MyShop } from '@/api/types'
 import { openSupport } from '@/lib/support'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { formatSchedule } from '@/lib/hours'
 
 /**
  * 15 «Мой бокс» — a profile like on social apps: avatar (tap — change), counters, name and place, my brands,
@@ -268,6 +269,7 @@ function PostTile({ part, size }: { part: MyPartItem; size: number }) {
 function MenuSheet({ onClose }: { onClose: () => void }) {
 	const c = useColors()
 	const stats = useShopStats('MONTH')
+	const shopOpen = useMyShop().data?.open
 	const settings = useSettings()
 	const updateSettings = useUpdateSettings()
 	const updateMe = useUpdateMe()
@@ -307,6 +309,7 @@ function MenuSheet({ onClose }: { onClose: () => void }) {
 
 			<View style={{ borderRadius: 16, backgroundColor: c.surface, overflow: 'hidden', marginTop: 6 }}>
 				<SettingsRow label={t('Мои марки')} value="›" valueColor={c.brandStrong} valueWeight={700} onPress={openBrands} />
+				<SettingsRow label={t('Время работы')} value={shopOpen ? `${formatSchedule(shopOpen)} ›` : '›'} valueColor={c.brandStrong} valueWeight={700} onPress={() => (onClose(), router.push('/shop-hours'))} />
 				<SettingsRow label={t('Язык')} height={60} right={<LanguageSwitch value={lang === 'ky' ? 'kg' : 'ru'} onChange={changeLang} />} />
 				<SettingsRow
 					label={t('Звук нового запроса')}
