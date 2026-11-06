@@ -23,6 +23,9 @@ import {
 import type { Reply } from '@/api/types'
 import { openShopRoute } from '@/lib/shop-place'
 import { t } from '@/i18n'
+import { flattenPages } from '@/api/pagination'
+import { useSearchParts } from '@/api/catalog'
+import { PartTile } from '@/components/catalog-screen'
 
 type Sort = 'CHEAP' | 'RATING' | 'FIRST'
 
@@ -209,6 +212,7 @@ export default function RequestScreen() {
 						) : null}
 					</View>
 				)}
+				{detail && !closed ? <MayFit brandId={detail.car.brand.id} modelId={detail.car.modelId} categoryId={detail.category?.id} /> : null}
 			</ScrollView>
 
 			{bar ? (
@@ -517,3 +521,29 @@ function SheetRow({
 		</Pressable>
 	)
 }
+
+/**
+ * «Вам может подойти»: parts already in the catalog for this car (and the request's category, when known) —
+ * the buyer may find the part without waiting for answers. Nothing found — no block at all.
+ */
+function MayFit({ brandId, modelId, categoryId }: { brandId: number; modelId: number; categoryId?: number }) {
+	const c = useColors()
+	const search = useSearchParts({ brandId, modelId, categoryId })
+	const items = flattenPages(search.data).slice(0, 8)
+	if (!items.length) return null
+	return (
+		<View style={{ gap: 10, paddingTop: 12 }}>
+			<Text style={{ fontSize: fs.xl, fontFamily: fontFamily(800), color: c.ink }}>{t('Вам может подойти')}</Text>
+			<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }} style={{ marginHorizontal: -16 }}>
+				<View style={{ width: 6 }} />
+				{items.map((part) => (
+					<View key={part.id} style={{ width: 160 }}>
+						<PartTile part={part} />
+					</View>
+				))}
+				<View style={{ width: 6 }} />
+			</ScrollView>
+		</View>
+	)
+}
+

@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { Linking, Pressable, ScrollView, Share, Text, View, useWindowDimensions } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Linking, Pressable, ScrollView, Share, Text, TextInput, View, useWindowDimensions } from 'react-native'
 import { onNearEnd } from '@/lib/scroll'
 import { Image } from '@/components/ui/image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { LocationCard, QueryErrorBanner, Skeleton, SkeletonProductGrid, SkeletonRepeat, MoreButton } from '@/components/ui'
 import { BrandLogo } from '@/components/ui/brand'
-import { ChatIcon, ChevronLeftIcon, HeartIcon, MapPinIcon, PhoneIcon, ShareIcon, WhatsAppIcon } from '@/components/icons'
+import { ChatIcon, ChevronLeftIcon, HeartIcon, MapPinIcon, PhoneIcon, SearchIcon, ShareIcon, WhatsAppIcon } from '@/components/icons'
 import { openWhatsApp } from '@/lib/whatsapp'
 import { fixed, fontFamily, fs, sectionTitle, useColors } from '@/theme'
 import { resolveUrl } from '@/lib/api'
@@ -19,11 +19,14 @@ import { ComplainLink, ComplaintSheet, type ComplaintTarget } from '@/components
 import { open2gis, openShopRoute } from '@/lib/shop-place'
 import { PartTile } from '@/components/catalog-screen'
 import { t } from '@/i18n'
+import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** Filled rating stars — gold, the empty ones stay grey. */
 const STAR = fixed.star
 
 type Tab = 'parts' | 'reviews'
+/** More parts than this — the profile gets «Поиск по товарам магазина». */
+const SEARCH_FROM = 8
 
 /** 30 — shop profile for buyers. `id`, or `publicId` from a share link /s/{publicId}. */
 export default function SellerProfileForBuyerScreen() {
@@ -42,7 +45,14 @@ export default function SellerProfileForBuyerScreen() {
 	const [tab, setTab] = useState<Tab>('parts')
 	const [complaint, setComplaint] = useState<ComplaintTarget | null>(null)
 	const [categoryId, setCategoryId] = useState<number | null>(null)
-	const parts = useShopParts(shopId, categoryId ? { categoryId } : {})
+	// Search within the shop — the request goes out once typing pauses, not on every letter.
+	const [typed, setTyped] = useState('')
+	const [q, setQ] = useState('')
+	useEffect(() => {
+		const timer = setTimeout(() => setQ(typed.trim()), 350)
+		return () => clearTimeout(timer)
+	}, [typed])
+	const parts = useShopParts(shopId, { ...(categoryId ? { categoryId } : {}), ...(q ? { q } : {}) })
 	const reviews = useShopReviews(shopId, tab === 'reviews')
 	const favorite = useToggleShopFavorite(shopId)
 	const openChat = useOpenChat()
@@ -240,6 +250,22 @@ export default function SellerProfileForBuyerScreen() {
 						))}
 					</View>
 
+					{/* Only where there is a lot to look through — a small shop needs no search field. */}
+					{tab === 'parts' && (counts?.parts ?? 0) > SEARCH_FROM ? (
+						<View style={{ height: 46, borderRadius: 12, backgroundColor: c.card, borderWidth: 1.5, borderColor: c.border, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
+							<SearchIcon size={18} color={c.muted} />
+							<TextInput
+								inputAccessoryViewID={KEYBOARD_DONE}
+								value={typed}
+								onChangeText={setTyped}
+								placeholder={t('Поиск по товарам магазина')}
+								placeholderTextColor={c.muted}
+								returnKeyType="search"
+								style={{ flex: 1, fontSize: fs.base, fontFamily: fontFamily(400), color: c.ink, padding: 0 }}
+							/>
+						</View>
+					) : null}
+
 					{tab === 'parts' && partCategories.length > 1 ? (
 						<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ marginHorizontal: -16 }}>
 							<View style={{ width: 8 }} />
@@ -279,7 +305,7 @@ export default function SellerProfileForBuyerScreen() {
 								</View>
 							) : null}
 							{parts.isSuccess && partItems.length === 0 ? (
-								<Text style={{ fontSize: fs.base, fontFamily: fontFamily(400), color: c.muted }}>{t('Запчасти ещё не выложены')}</Text>
+								<Text style={{ fontSize: fs.base, fontFamily: fontFamily(400), color: c.muted }}>{q || categoryId ? t('Ничего не нашли — попробуйте другое слово') : t('Запчасти ещё не выложены')}</Text>
 							) : null}
 						</View>
 					) : null}
