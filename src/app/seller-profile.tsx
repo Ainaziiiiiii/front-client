@@ -347,7 +347,7 @@ export default function SellerProfileForBuyerScreen() {
 					style={{ flex: 1, height: 52, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.fill, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
 				>
 					<MapPinIcon size={20} color={c.ink} />
-					<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.ink }}>{shop && !shop.location ? t('2ГИС') : t('Маршрут')}</Text>
+					<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(700), color: c.ink }}>{shop && !shop.location ? t('2ГИС') : t('Маршрут')}</Text>
 				</Pressable>
 				<Pressable
 					onPress={write}
@@ -356,7 +356,7 @@ export default function SellerProfileForBuyerScreen() {
 					style={{ flex: 1.6, height: 52, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: openChat.isPending ? 0.6 : 1 }}
 				>
 					<ChatIcon size={20} color={fixed.white} />
-					<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: fixed.white }}>{t('Написать')}</Text>
+					<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(700), color: fixed.white }}>{t('Написать')}</Text>
 				</Pressable>
 				{/* The phone, then WhatsApp at the edge — only when the shop made the number visible (or after a chat). */}
 				{shop?.phone ? (

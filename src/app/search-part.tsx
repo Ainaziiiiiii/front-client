@@ -225,7 +225,7 @@ export default function SearchPartScreen() {
 							<View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: c.brandTint, alignItems: 'center', justifyContent: 'center' }}>
 								<CameraV23Icon size={26} color={c.brandStrong} />
 							</View>
-							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontSize: fs.base, fontFamily: fontFamily(700), color: c.ink }}>{t('Сфотать деталь')}</Text>
+							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flexShrink: 1, fontSize: fs.base, fontFamily: fontFamily(700), color: c.ink }}>{t('Сфотать деталь')}</Text>
 						</DashedTile>
 					)}
 
@@ -254,7 +254,7 @@ export default function SearchPartScreen() {
 							>
 								{voice.uploading ? <ActivityIndicator color={fixed.white} /> : <MicV23Icon size={26} color={fixed.white} />}
 							</View>
-							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontSize: fs.base, fontFamily: fontFamily(700), color: c.ink }}>
+							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flexShrink: 1, fontSize: fs.base, fontFamily: fontFamily(700), color: c.ink }}>
 								{voice.uploading ? t('Слушаем…') : voice.recording ? t('Готово · {0}', voiceClock(voice.seconds)) : t('Сказать голосом')}
 							</Text>
 						</DashedTile>

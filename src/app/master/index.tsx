@@ -297,14 +297,14 @@ export function RequestCard({
 					</Pressable>
 					<View style={{ flexDirection: 'row', gap: 8 }}>
 						<Pressable onPress={onSkip} style={{ flex: 1, height: 50, borderRadius: 14, backgroundColor: c.fill, alignItems: 'center', justifyContent: 'center' }}>
-							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.ink }}>{t('Не моё')}</Text>
+							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(700), color: c.ink }}>{t('Не моё')}</Text>
 						</Pressable>
 						<Pressable
 							onPress={onHelp}
 							style={{ flex: 1, height: 50, borderRadius: 14, backgroundColor: c.successSoft, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
 						>
 							<CheckMark size={20} color={c.success} />
-							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.success }}>{t('Могу помочь')}</Text>
+							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(700), color: c.success }}>{t('Могу помочь')}</Text>
 						</Pressable>
 					</View>
 				</>

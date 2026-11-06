@@ -274,7 +274,7 @@ function FeedPage({
 						}}
 					>
 						<ChatIcon size={20} color={fixed.white} strokeWidth={2.2} />
-						<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: fixed.white }}>{t('Заказать')}</Text>
+						<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(700), color: fixed.white }}>{t('Заказать')}</Text>
 					</Pressable>
 					{item.shipsToRegions ? (
 						<Pressable
@@ -291,7 +291,7 @@ function FeedPage({
 							}}
 						>
 							<TruckIcon size={20} color={c.ink} />
-							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.ink }}>{t('Доставка')}</Text>
+							<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(700), color: c.ink }}>{t('Доставка')}</Text>
 						</Pressable>
 					) : null}
 				</View>

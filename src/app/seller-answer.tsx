@@ -219,7 +219,7 @@ function Choice({ label, active, onPress }: { label: string; active: boolean; on
 				gap: 6,
 			}}
 		>
-			<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(active ? 700 : 600), color: active ? c.brandStrong : c.ink }}>{label}</Text>
+			<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(active ? 700 : 600), color: active ? c.brandStrong : c.ink }}>{label}</Text>
 		</Pressable>
 	)
 }

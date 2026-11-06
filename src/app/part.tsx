@@ -289,7 +289,7 @@ export default function PartScreen() {
 					style={{ flex: 1, height: 54, paddingHorizontal: 10, borderRadius: 14, backgroundColor: c.fill, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
 				>
 					<MapPinIcon size={20} color={c.ink} />
-					<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.ink }}>{shop && !shop.location ? t('2ГИС') : t('Как пройти')}</Text>
+					<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(700), color: c.ink }}>{shop && !shop.location ? t('2ГИС') : t('Как пройти')}</Text>
 				</Pressable>
 				<Pressable
 					disabled={!shop || openChat.isPending}
@@ -309,7 +309,7 @@ export default function PartScreen() {
 					}}
 				>
 					<ChatIcon size={20} color={fixed.white} />
-					<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: fixed.white }}>{t('Написать')}</Text>
+					<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ flexShrink: 1, fontSize: fs.lg, fontFamily: fontFamily(700), color: fixed.white }}>{t('Написать')}</Text>
 				</Pressable>
 				{/* WhatsApp at the right edge — «Я из приложения KUDAIBERDI. Меня интересует «…»» (only when the shop's number is visible). */}
 				{shop?.phone ? (
