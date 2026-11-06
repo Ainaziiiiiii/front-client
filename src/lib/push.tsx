@@ -192,7 +192,15 @@ function typedPrice(text: string | undefined) {
 	return digits && price > 0 ? price : null
 }
 
+/** Each tap is handled once: the listener and the cold-start check can both see the same one. */
+const handledTaps = new Set<string>()
+/** The tap that cold-started the app is looked at once per launch — not again after every sign-in. */
+let coldStartChecked = false
+
 async function handleResponse(response: Notifications.NotificationResponse) {
+	const id = `${response.notification.request.identifier}:${response.actionIdentifier}`
+	if (handledTaps.has(id)) return
+	handledTaps.add(id)
 	const data = (response.notification.request.content.data ?? {}) as PushData
 	if (response.actionIdentifier === 'HAVE' && data.requestId) {
 		const price = typedPrice(response.userText)
@@ -253,9 +261,14 @@ export function PushProvider({ children }: { children: ReactNode }) {
 
 	useEffect(() => {
 		if (!signedIn || Platform.OS === 'web') return
-		Notifications.getLastNotificationResponseAsync()
-			.then((response) => response && handleResponse(response))
-			.catch(() => {})
+		// The OS keeps the last tapped push across launches; without clearing it every sign-in reopened that old chat.
+		if (!coldStartChecked) {
+			coldStartChecked = true
+			Notifications.getLastNotificationResponseAsync()
+				.then((response) => response && handleResponse(response))
+				.catch(() => {})
+				.finally(() => Notifications.clearLastNotificationResponse())
+		}
 		const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
 			handleResponse(response).catch(() => {})
 		})
