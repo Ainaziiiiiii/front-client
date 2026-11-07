@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Keyboard, Linking, Pressable, Text, TextInput, View } from 'react-native'
 import { Image } from '@/components/ui/image'
-import { Redirect, router } from 'expo-router'
+import { Redirect, router, useLocalSearchParams } from 'expo-router'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { Button } from '@/components/ui'
 import { AUTH_FIELD_HEIGHT, AuthLayout } from '@/components/auth-layout'
@@ -39,13 +39,14 @@ export default function PhoneScreen() {
 	const hasMaster = useSession((s) => s.hasMaster)
 	const lang = useSession((s) => s.lang)
 	const setLang = useSession((s) => s.setLang)
+	const { login } = useLocalSearchParams<{ login?: string }>()
 	const [phone, setPhone] = useState('')
 	const sendOtp = useSendOtp()
 
 	if (signedIn) return <Redirect href={homeHref({ role, onboarded, hasShop, hasMaster })} />
 	// The app opens on the catalog, not on a sign-in wall (App Store 5.1.1(v)): this screen shows only when someone
-	// chose «Войти» (pushed from inside the app, so there is a way back).
-	if (!router.canGoBack()) return <Redirect href="/buyer" />
+	// chose «Войти» (openSignIn adds login=1). Not «can go back» — inside the tabs that answer flickers.
+	if (login !== '1') return <Redirect href="/buyer" />
 
 	const submit = () => {
 		Keyboard.dismiss()
@@ -163,7 +164,7 @@ export default function PhoneScreen() {
 			footer={
 				<View style={{ gap: 12 }}>
 					<Button label={t('Получить код')} disabled={!isValidLocalPhone(phone)} loading={sendOtp.isPending} onPress={submit} />
-					<Pressable onPress={() => router.back()} hitSlop={8} style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}>
+					<Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/buyer'))} hitSlop={8} style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}>
 						<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Не сейчас')}</Text>
 					</Pressable>
 					{/* Entering means accepting the rules (App Store 1.2: user content needs agreed terms). */}

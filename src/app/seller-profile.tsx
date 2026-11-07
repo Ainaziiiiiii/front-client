@@ -20,6 +20,7 @@ import { open2gis, openShopRoute } from '@/lib/shop-place'
 import { PartTile } from '@/components/catalog-screen'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { openSignIn } from '@/components/sign-in-prompt'
 
 /** Filled rating stars — gold, the empty ones stay grey. */
 const STAR = fixed.star
@@ -71,7 +72,7 @@ export default function SellerProfileForBuyerScreen() {
 		shop &&
 		(signedIn
 			? openChat.mutate({ shopId: shop.id }, { onSuccess: (chat) => router.push({ pathname: '/chat', params: { chatId: String(chat.id) } }) })
-			: router.push('/'))
+			: openSignIn())
 
 	const roundButton = { width: 40, height: 40, borderRadius: 20, backgroundColor: c.floating, alignItems: 'center', justifyContent: 'center' } as const
 

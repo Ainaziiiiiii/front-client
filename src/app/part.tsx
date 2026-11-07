@@ -26,6 +26,7 @@ import { photosAsMedia } from '@/components/media-strip'
 import { openShopRoute, shopPlace } from '@/lib/shop-place'
 import { t } from '@/i18n'
 import { formatOpenNow } from '@/lib/hours'
+import { openSignIn } from '@/components/sign-in-prompt'
 
 const CONDITION: Record<PartCondition, string> = { NEW: t('Новое'), USED: t('Б/У'), ON_ORDER: t('Под заказ') }
 
@@ -69,7 +70,7 @@ export default function PartScreen() {
 					{ shopId: shop.id, partId: part?.id },
 					{ onSuccess: (chat) => router.push({ pathname: '/chat', params: { chatId: String(chat.id) } }) }
 				)
-			: router.push('/'))
+			: openSignIn())
 
 	const roundButton = { width: 40, height: 40, borderRadius: 20, backgroundColor: c.floating, alignItems: 'center', justifyContent: 'center' } as const
 

@@ -21,6 +21,7 @@ import { ChatIcon } from '@/components/icons'
 import { useVideoViewer } from '@/store/useVideoViewer'
 import { marketPlace } from '@/lib/shop-place'
 import { t } from '@/i18n'
+import { openSignIn } from '@/components/sign-in-prompt'
 
 /**
  * Videos from the market, full screen (like reels): a video is a part for sale, swiping shows only videos.
@@ -162,7 +163,7 @@ function FeedPage({
 							}),
 					}
 				)
-			: router.push('/')
+			: openSignIn()
 	const meta = [marketPlace(shop.place), shop.replyMinutes != null ? t('отвечает за {0} мин', shop.replyMinutes) : null].filter(Boolean).join(' · ')
 	const [commenting, setCommenting] = useState(false)
 	const condition = CONDITION_CHIP[item.condition]
@@ -173,7 +174,7 @@ function FeedPage({
 			key: 'save',
 			label: item.favoritesCount ? String(item.favoritesCount) : null,
 			icon: <BookmarkIcon size={22} color={fixed.white} filled={item.isFavorite} />,
-			onPress: () => (signedIn ? favorite.mutate({ partId: item.partId, favorite: !item.isFavorite }) : router.push('/')),
+			onPress: () => (signedIn ? favorite.mutate({ partId: item.partId, favorite: !item.isFavorite }) : openSignIn()),
 		},
 		{
 			key: 'comments',
@@ -278,7 +279,7 @@ function FeedPage({
 					</Pressable>
 					{item.shipsToRegions ? (
 						<Pressable
-							onPress={() => (signedIn ? router.push({ pathname: '/delivery', params: { partId: String(item.partId) } }) : router.push('/'))}
+							onPress={() => (signedIn ? router.push({ pathname: '/delivery', params: { partId: String(item.partId) } }) : openSignIn())}
 							style={{
 								flex: 1,
 								height: 52,

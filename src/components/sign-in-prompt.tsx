@@ -8,9 +8,12 @@ import { fontFamily, fs, useColors } from '@/theme'
 import { useSession } from '@/store/useSession'
 import { t } from '@/i18n'
 
-/** The phone sign-in screen, opened from inside the app — «‹» brings the guest back where they were. */
+/**
+ * The phone sign-in screen, opened from inside the app — «Не сейчас» brings the guest back. `login=1` marks a
+ * request to sign in: without it the start route is the app launch and goes straight to the catalog.
+ */
 export function openSignIn() {
-	router.push('/')
+	router.push({ pathname: '/', params: { login: '1' } })
 }
 
 /**

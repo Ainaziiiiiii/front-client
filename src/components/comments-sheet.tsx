@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Alert, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native'
-import { router } from 'expo-router'
 import { onNearEnd } from '@/lib/scroll'
 import { PaperPlaneIcon } from '@/components/buyer-v23'
 import { ModalSheet } from '@/components/master-v23'
@@ -13,6 +12,7 @@ import { useAddPartComment, useDeletePartComment, usePartComments, useSignedIn }
 import type { PartComment } from '@/api/types'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { openSignIn } from '@/components/sign-in-prompt'
 
 /**
  * Comments under a video part (the reels-like feed): newest first, «Продавец» on the box's own answers, a field to
@@ -34,7 +34,8 @@ export function CommentsSheet({ partId, onClose }: { partId: number; onClose: ()
 	const send = () => {
 		if (!signedIn) {
 			onClose()
-			router.push('/')
+			// iOS drops a navigation started while a modal is still closing — wait for the sheet to go.
+			setTimeout(openSignIn, 350)
 			return
 		}
 		if (!value || add.isPending) return
