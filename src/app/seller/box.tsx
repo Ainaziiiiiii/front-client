@@ -67,31 +67,22 @@ export default function SellerBoxScreen() {
 
 	const header = (
 		<View style={{ paddingHorizontal: 16, paddingBottom: 14, gap: 12 }}>
-			<QueryErrorBanner error={shop.error ?? parts.error ?? setAvatar.error} onRetry={() => shop.refetch()} />
-			<AccountStatusBanner
-				status={data?.status}
-				reason={data?.blockReason}
-				kind="shop"
-				offMarket={Boolean(data && !data.location)}
-				action={data && !data.location ? { label: t('Изменить профиль'), onPress: () => router.push('/seller-profile') } : { label: t('Выбрать другой контейнер'), onPress: () => router.push('/box-select') }}
-			/>
-
-			{/* The banner buyers see behind the shop's profile — here the seller sees it too and changes it. */}
+			{/* As on LinkedIn: the banner buyers see behind the shop's profile, edge to edge — here the seller sees and changes it. */}
 			<Pressable
 				onPress={() => coverUpload.pick('library')}
 				disabled={coverBusy || !data}
-				style={{ height: 150, borderRadius: 18, overflow: 'hidden', backgroundColor: c.brandTint, alignItems: 'center', justifyContent: 'center' }}
+				style={{ marginHorizontal: -16, height: 150, overflow: 'hidden', backgroundColor: c.brandTint, alignItems: 'center', justifyContent: 'center' }}
 			>
 				{cover ? (
 					<Image source={{ uri: resolveUrl(cover.url) }} style={{ position: 'absolute', width: '100%', height: '100%' }} contentFit="cover" />
 				) : (
-					<View style={{ alignItems: 'center', gap: 4, paddingHorizontal: 24 }}>
+					<View style={{ alignItems: 'center', gap: 4, paddingHorizontal: 24, paddingBottom: 36 }}>
 						<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Добавить обложку')}</Text>
 						<Text style={{ fontSize: fs.sm, textAlign: 'center', fontFamily: fontFamily(400), color: c.inkSecondary }}>{t('Фото витрины или контейнера — его видят покупатели в профиле магазина')}</Text>
 					</View>
 				)}
 				{cover ? (
-					<View style={{ position: 'absolute', right: 10, bottom: 10, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center' }}>
+					<View style={{ position: 'absolute', right: 12, top: 12, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center' }}>
 						<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(700), color: fixed.white }}>{t('Сменить обложку')}</Text>
 					</View>
 				) : null}
@@ -101,20 +92,18 @@ export default function SellerBoxScreen() {
 					</View>
 				) : null}
 			</Pressable>
-			{addPhoto.error ?? setCover.error ? (
-				<Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{(addPhoto.error ?? setCover.error)?.message}</Text>
-			) : null}
-
-			<View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+			<View style={{ marginTop: -56, flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>
 				{shop.isLoading ? (
-					<Skeleton width={80} height={80} radius={40} />
+					<Skeleton width={96} height={96} radius={48} />
 				) : (
 				<Pressable onPress={() => avatarUpload.pick('library')} disabled={avatarBusy}>
 						<View
 							style={{
-								width: 80,
-								height: 80,
-								borderRadius: 40,
+								width: 96,
+								height: 96,
+								borderRadius: 48,
+								borderWidth: 4,
+								borderColor: c.surface,
 								overflow: 'hidden',
 								backgroundColor: c.brandTint,
 								alignItems: 'center',
@@ -145,12 +134,25 @@ export default function SellerBoxScreen() {
 						</View>
 	</Pressable>
 				)}
-				<View style={{ flex: 1, flexDirection: 'row' }}>
+				<View style={{ flex: 1, flexDirection: 'row', paddingBottom: 6 }}>
 					<Counter value={summary.data ? String(summary.data.all) : '—'} label={t('товаров')} />
 					<Counter value={data?.reviewsCount ? data.rating.toFixed(1) : '—'} label={t('рейтинг')} star={Boolean(data?.reviewsCount)} />
 					<Counter value={data ? String(data.reviewsCount) : '—'} label={t('отзывов')} />
 				</View>
 			</View>
+
+			{addPhoto.error ?? setCover.error ? (
+				<Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{(addPhoto.error ?? setCover.error)?.message}</Text>
+			) : null}
+
+			<QueryErrorBanner error={shop.error ?? parts.error ?? setAvatar.error} onRetry={() => shop.refetch()} />
+			<AccountStatusBanner
+				status={data?.status}
+				reason={data?.blockReason}
+				kind="shop"
+				offMarket={Boolean(data && !data.location)}
+				action={data && !data.location ? { label: t('Изменить профиль'), onPress: () => router.push('/seller-profile') } : { label: t('Выбрать другой контейнер'), onPress: () => router.push('/box-select') }}
+			/>
 
 			{shop.isLoading ? (
 				<View style={{ gap: 8 }}>
