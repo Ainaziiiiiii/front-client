@@ -1,66 +1,55 @@
 import { useEffect, useState } from 'react'
-import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native'
-import { Image } from '@/components/ui/image'
+import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import { fixed, fontFamily, fs } from '@/theme'
 import { t } from '@/i18n'
 
-/** The blue of the sign-in film — the native splash uses it too. */
-export const INTRO_BLUE = '#0636C4'
-/** How long the logo holds before the app shows through. */
-const HOLD_MS = 3500
-const GEAR = 176
+/**
+ * The flat blue of intro-logo.mp4 — the sign-in film with its blueprint keyed out (every blue pixel replaced by this
+ * colour, the silver and gold gear kept). Measured from the encoded file, so the film's edge never shows.
+ */
+export const INTRO_BLUE = '#0435C4'
+/** How long the film plays before the app shows through: the gear turns, comes apart and starts to close. */
+const HOLD_MS = 4500
 
 /**
- * On launch: the KUDAIBERDI gear (the crisp transparent mark, not the film — the film has its blueprint baked in)
- * winds up on flat blue — it turns in, overshoots a little and clicks into place like a mechanism — then
- * KUDAIBERDI and «Всё для вашего авто» rise under it and everything fades into the app. Once per launch.
+ * On launch: the same animation as on sign-in — the gear coming apart and back together like a watch — on flat blue
+ * with no blueprint, KUDAIBERDI and «Всё для вашего авто» under it, then a soft fade into the app. Once per launch.
  */
 export function IntroSplash({ onDone }: { onDone: () => void }) {
-	const [wind] = useState(() => new Animated.Value(0))
+	const { width } = useWindowDimensions()
+	const filmH = width * (690 / 1086)
+	const player = useVideoPlayer(require('../../assets/video/intro-logo.mp4'), (p) => {
+		p.loop = false
+		p.muted = true
+		p.play()
+	})
 	const [words] = useState(() => new Animated.Value(0))
 	const [fade] = useState(() => new Animated.Value(1))
 
 	useEffect(() => {
 		let timer: ReturnType<typeof setTimeout> | undefined
 		AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-			if (reduce) {
-				wind.setValue(1)
-				words.setValue(1)
-			} else {
-				Animated.sequence([
-					// wind up: a long turn that slows down…
-					Animated.timing(wind, { toValue: 0.9, duration: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-					// …and the click into place
-					Animated.spring(wind, { toValue: 1, friction: 4, tension: 120, useNativeDriver: true }),
-				]).start()
-				Animated.timing(words, { toValue: 1, duration: 700, delay: 1100, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
-			}
+			Animated.timing(words, { toValue: 1, duration: reduce ? 0 : 700, delay: reduce ? 0 : 900, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
 			timer = setTimeout(
 				() => Animated.timing(fade, { toValue: 0, duration: reduce ? 150 : 500, useNativeDriver: true }).start(() => onDone()),
 				reduce ? 1200 : HOLD_MS
 			)
 		})
 		return () => clearTimeout(timer)
-	}, [wind, words, fade, onDone])
+	}, [words, fade, onDone])
 
 	return (
 		<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: fade, zIndex: 100, backgroundColor: INTRO_BLUE }]}>
-			<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 26 }}>
-				<Animated.View
-					style={{
-						opacity: wind.interpolate({ inputRange: [0, 0.25, 1], outputRange: [0, 1, 1] }),
-						transform: [
-							{ scale: wind.interpolate({ inputRange: [0, 0.9, 1], outputRange: [0.5, 1.04, 1] }) },
-							{ rotate: wind.interpolate({ inputRange: [0, 0.9, 1], outputRange: ['-300deg', '6deg', '0deg'] }) },
-						],
-					}}
-				>
-					<Image source={require('../../assets/images/logo-mark.png')} style={{ width: GEAR, height: GEAR }} />
-				</Animated.View>
+			<View style={{ flex: 1, justifyContent: 'center' }}>
+				<View style={{ width, height: filmH }}>
+					<VideoView player={player} nativeControls={false} contentFit="contain" style={StyleSheet.absoluteFill} />
+				</View>
 				<Animated.View
 					style={{
 						alignItems: 'center',
 						gap: 4,
+						marginTop: -filmH * 0.12,
 						opacity: words,
 						transform: [{ translateY: words.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
 					}}
