@@ -1,84 +1,65 @@
 import { useEffect, useState } from 'react'
-import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
+import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, useWindowDimensions } from 'react-native'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import { Image } from '@/components/ui/image'
-import { fixed, fontFamily, fs } from '@/theme'
+import { fixed, fontFamily, fs, useColors } from '@/theme'
 import { t } from '@/i18n'
 
-/** Night blue — the same colour the native splash uses, so launch flows in without a flash. */
-export const INTRO_BG = '#0B0F1A'
-const INTRO_BG_LOW = '#131C36'
-/** How long the logo holds before the app shows through. */
-const HOLD_MS = 1500
+/** How long the card holds before the app shows through. */
+const HOLD_MS = 2000
 
 /**
- * On launch: the KUDAIBERDI gear comes up out of the dark and turns into place, the name and «Всё для вашего авто»
- * rise under it, then everything fades into the app. Once per launch; taps go through to the app underneath.
+ * On launch: the same brand card as on sign-in — the moving gear on the blue blueprint, KUDAIBERDI and
+ * «Всё для вашего авто» over it — in the middle of the screen, then a soft fade into the app.
+ * Once per launch; taps go through to the app underneath.
  */
 export function IntroSplash({ onDone }: { onDone: () => void }) {
-	const [gear] = useState(() => new Animated.Value(0))
-	const [words] = useState(() => new Animated.Value(0))
-	const [glow] = useState(() => new Animated.Value(0))
+	const c = useColors()
+	const { width } = useWindowDimensions()
+	const cardWidth = Math.min(width - 48, 420)
+	const player = useVideoPlayer(require('../../assets/video/login-loop.mp4'), (p) => {
+		p.loop = true
+		p.muted = true
+		p.play()
+	})
+	const [card] = useState(() => new Animated.Value(0))
 	const [fade] = useState(() => new Animated.Value(1))
 
 	useEffect(() => {
 		let timer: ReturnType<typeof setTimeout> | undefined
 		AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-			const ms = (n: number) => (reduce ? 0 : n)
-			Animated.parallel([
-				Animated.timing(gear, { toValue: 1, duration: ms(900), easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-				Animated.timing(glow, { toValue: 1, duration: ms(1200), easing: Easing.out(Easing.quad), useNativeDriver: true }),
-				Animated.timing(words, { toValue: 1, duration: ms(600), delay: ms(550), easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-			]).start()
+			Animated.timing(card, { toValue: 1, duration: reduce ? 0 : 520, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
 			timer = setTimeout(
-				() => Animated.timing(fade, { toValue: 0, duration: ms(420) || 150, useNativeDriver: true }).start(() => onDone()),
-				reduce ? 700 : HOLD_MS + 600
+				() => Animated.timing(fade, { toValue: 0, duration: reduce ? 150 : 420, useNativeDriver: true }).start(() => onDone()),
+				reduce ? 700 : HOLD_MS
 			)
 		})
 		return () => clearTimeout(timer)
-	}, [gear, words, glow, fade, onDone])
+	}, [card, fade, onDone])
 
 	return (
-		<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: fade, zIndex: 100 }]}>
-			<LinearGradient colors={[INTRO_BG, INTRO_BG, INTRO_BG_LOW]} style={StyleSheet.absoluteFill} />
-			<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 28 }}>
-				<View style={{ width: 168, height: 168, alignItems: 'center', justifyContent: 'center' }}>
-					{/* the brand glow swells behind the gear */}
-					<Animated.View
-						style={{
-							position: 'absolute',
-							width: 300,
-							height: 300,
-							opacity: glow.interpolate({ inputRange: [0, 1], outputRange: [0, 0.55] }),
-							transform: [{ scale: glow.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
-						}}
-					>
-						<Image source={require('../../assets/images/logo-glow.png')} style={{ width: 300, height: 300 }} />
-					</Animated.View>
-					<Animated.View
-						style={{
-							opacity: gear.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 1, 1] }),
-							transform: [
-								{ scale: gear.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }) },
-								{ rotate: gear.interpolate({ inputRange: [0, 1], outputRange: ['-120deg', '0deg'] }) },
-							],
-						}}
-					>
-						<Image source={require('../../assets/images/logo-mark.png')} style={{ width: 150, height: 150 }} />
-					</Animated.View>
-				</View>
-				<Animated.View
-					style={{
-						alignItems: 'center',
-						gap: 8,
-						opacity: words,
-						transform: [{ translateY: words.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
-					}}
-				>
-					<Text style={{ fontSize: fs.h2, fontFamily: fontFamily(800), letterSpacing: 6, color: fixed.white }}>KUDAIBERDI</Text>
-					<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(500), letterSpacing: 0.3, color: 'rgba(255,255,255,0.7)' }}>{t('Всё для вашего авто')}</Text>
+		<Animated.View
+			pointerEvents="none"
+			style={[StyleSheet.absoluteFill, { zIndex: 100, opacity: fade, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }]}
+		>
+			<Animated.View
+				style={{
+					width: cardWidth,
+					aspectRatio: 1086 / 690,
+					borderRadius: 28,
+					overflow: 'hidden',
+					backgroundColor: fixed.brandCard,
+					opacity: card,
+					transform: [{ scale: card.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
+				}}
+			>
+				<Image source={require('../../assets/video/login-poster.jpg')} style={StyleSheet.absoluteFill} />
+				<VideoView player={player} nativeControls={false} contentFit="cover" style={StyleSheet.absoluteFill} />
+				<Animated.View style={{ position: 'absolute', left: 0, right: 0, bottom: 16, alignItems: 'center', gap: 2 }}>
+					<Text style={{ fontSize: fs.display, lineHeight: 34, fontFamily: fontFamily(800), letterSpacing: -0.5, color: fixed.white }}>KUDAIBERDI</Text>
+					<Text style={{ fontSize: fs.md, lineHeight: 21, fontFamily: fontFamily(500), color: 'rgba(255,255,255,0.85)' }}>{t('Всё для вашего авто')}</Text>
 				</Animated.View>
-			</View>
+			</Animated.View>
 		</Animated.View>
 	)
 }
