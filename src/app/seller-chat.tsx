@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ChatConversation, presenceLabel } from '@/components/chat-conversation'
+import { Avatar, ChatConversation, presenceLabel } from '@/components/chat-conversation'
 import { ChevronLeftIcon, FlagIcon } from '@/components/icons'
 import { fontFamily, fs, useColors } from '@/theme'
 import { useChat } from '@/api/chats'
@@ -34,8 +34,9 @@ export default function SellerChatScreen() {
 					<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => router.back()}>
 						<ChevronLeftIcon size={24} color={c.ink} />
 					</Pressable>
+					<Avatar url={chat?.buyer.avatarUrl ?? null} name={chat?.buyer.name ?? t('Покупатель')} size={40} />
 					<View style={{ flex: 1, gap: 2 }}>
-						<Text style={{ fontSize: fs.xl, fontFamily: fontFamily(700), color: c.ink }}>
+						<Text numberOfLines={1} style={{ fontSize: fs.xl, fontFamily: fontFamily(700), color: c.ink }}>
 							{chat ? (chat.buyer.name ?? t('Покупатель')) : ' '}
 						</Text>
 						<Text numberOfLines={1} style={{ fontSize: fs.sm, fontFamily: fontFamily(400), color: typing ? c.success : c.muted }}>
