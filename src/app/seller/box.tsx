@@ -15,7 +15,7 @@ import { resolveUrl } from '@/lib/api'
 import { formatDay } from '@/lib/format'
 import { COUNTRY_CODE, formatE164, formatLocalPhone, isValidLocalPhone, toE164 } from '@/lib/phone'
 import { useSettings, useUpdateMe, useUpdateSettings } from '@/api/me'
-import { useMyShop, useSetShopAvatar, useUpdateShop } from '@/api/shop'
+import { useAddShopPhoto, useMyShop, useSetShopAvatar, useSetShopCover, useUpdateShop } from '@/api/shop'
 import { usePhotoUploads } from '@/api/media'
 import { useMyParts, useMyPartsSummary } from '@/api/parts'
 import { flattenPages } from '@/api/pagination'
@@ -53,6 +53,12 @@ export default function SellerBoxScreen() {
 	const tile = (width - 4) / 3
 	const place = data ? (data.location ? t('Ряд {0} · Контейнер {1}', data.location.rowCode, data.location.number) : (data.address ?? '')) : ''
 	const avatarBusy = avatarUpload.photos.length > 0 || setAvatar.isPending
+	// The banner on the shop profile [30] is the first photo of the place — added here and made the cover.
+	const addPhoto = useAddShopPhoto()
+	const setCover = useSetShopCover()
+	const coverUpload = usePhotoUploads('SHOP', 1, (photo) => addPhoto.mutateAsync(photo.id).then(() => setCover.mutateAsync(photo.id)))
+	const cover = data?.photos[0]
+	const coverBusy = coverUpload.photos.length > 0 || addPhoto.isPending || setCover.isPending
 
 	const newPart = () => {
 		usePartDraft.getState().reset()
@@ -69,6 +75,35 @@ export default function SellerBoxScreen() {
 				offMarket={Boolean(data && !data.location)}
 				action={data && !data.location ? { label: t('Изменить профиль'), onPress: () => router.push('/seller-profile') } : { label: t('Выбрать другой контейнер'), onPress: () => router.push('/box-select') }}
 			/>
+
+			{/* The banner buyers see behind the shop's profile — here the seller sees it too and changes it. */}
+			<Pressable
+				onPress={() => coverUpload.pick('library')}
+				disabled={coverBusy || !data}
+				style={{ height: 150, borderRadius: 18, overflow: 'hidden', backgroundColor: c.brandTint, alignItems: 'center', justifyContent: 'center' }}
+			>
+				{cover ? (
+					<Image source={{ uri: resolveUrl(cover.url) }} style={{ position: 'absolute', width: '100%', height: '100%' }} contentFit="cover" />
+				) : (
+					<View style={{ alignItems: 'center', gap: 4, paddingHorizontal: 24 }}>
+						<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Добавить обложку')}</Text>
+						<Text style={{ fontSize: fs.sm, textAlign: 'center', fontFamily: fontFamily(400), color: c.inkSecondary }}>{t('Фото витрины или контейнера — его видят покупатели в профиле магазина')}</Text>
+					</View>
+				)}
+				{cover ? (
+					<View style={{ position: 'absolute', right: 10, bottom: 10, height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center' }}>
+						<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(700), color: fixed.white }}>{t('Сменить обложку')}</Text>
+					</View>
+				) : null}
+				{coverBusy ? (
+					<View style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' }}>
+						<ActivityIndicator color={fixed.white} />
+					</View>
+				) : null}
+			</Pressable>
+			{addPhoto.error ?? setCover.error ? (
+				<Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.danger }}>{(addPhoto.error ?? setCover.error)?.message}</Text>
+			) : null}
 
 			<View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
 				{shop.isLoading ? (

@@ -75,6 +75,13 @@ function usePhotosMutation<TVariables>(mutationFn: (variables: TVariables) => Pr
 	})
 }
 
+/** The banner buyers see on the shop profile — the photo becomes the first one. */
+export function useSetShopCover() {
+	return usePhotosMutation((mediaId: number) =>
+		apiFetch<ShopPhoto[]>(`/my/shop/photos/${mediaId}/cover`, { method: 'POST' })
+	)
+}
+
 export function useAddShopPhoto() {
 	return usePhotosMutation((mediaId: number) =>
 		apiFetch<ShopPhoto[]>('/my/shop/photos', { method: 'POST', body: { mediaId } })

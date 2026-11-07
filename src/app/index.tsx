@@ -13,6 +13,7 @@ import { useSendOtp } from '@/api/auth'
 import { homeHref, useSession } from '@/store/useSession'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { KgFlag } from '@/components/kg-flag'
 
 const LANGS = [
 	{ value: 'ru', label: 'RU' },
@@ -133,7 +134,10 @@ export default function PhoneScreen() {
 						gap: 12,
 					}}
 				>
-					<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.ink }}>{COUNTRY_CODE}</Text>
+					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+						<KgFlag width={28} />
+						<Text style={{ fontSize: fs.xxl, fontFamily: fontFamily(700), color: c.ink }}>{COUNTRY_CODE}</Text>
+					</View>
 					<View style={{ width: 1.5, height: 26, backgroundColor: c.border }} />
 					<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 						value={phone}
