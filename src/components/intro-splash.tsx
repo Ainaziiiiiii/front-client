@@ -94,7 +94,7 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
 					transform: [{ translateY: line.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
 				}}
 			>
-				<Text style={{ textAlign: 'center', fontSize: 21, lineHeight: 28, fontFamily: fontFamily(700), color: c.ink }}>{tagline}</Text>
+				<Text style={{ textAlign: 'center', fontSize: 21, lineHeight: 28, fontFamily: fontFamily(700), color: c.brandStrong }}>{tagline}</Text>
 			</Animated.View>
 		</Animated.View>
 	)
