@@ -113,9 +113,8 @@ export default function PhoneScreen() {
 				<View style={{ flex: 1, alignSelf: 'stretch', marginTop: 12, borderRadius: 28, overflow: 'hidden', backgroundColor: fixed.brandCard }}>
 					<Image source={require('../../assets/video/login-poster.jpg')} style={{ position: 'absolute', width: '100%', height: '100%' }} />
 					<VideoView player={logoLoop} nativeControls={false} contentFit="cover" style={{ position: 'absolute', width: '100%', height: '100%' }} />
-					<View style={{ position: 'absolute', left: 0, right: 0, bottom: 16, alignItems: 'center', gap: 2 }}>
+					<View style={{ position: 'absolute', left: 0, right: 0, bottom: 14, alignItems: 'center' }}>
 						<Text style={{ fontSize: fs.display, lineHeight: 34, fontFamily: fontFamily(800), letterSpacing: -0.5, color: fixed.white }}>KUDAIBERDI</Text>
-						<Text style={{ fontSize: fs.md, lineHeight: 21, fontFamily: fontFamily(500), color: 'rgba(255,255,255,0.85)' }}>{t('Авторынок запчастей в Бишкеке')}</Text>
 					</View>
 				</View>
 			}

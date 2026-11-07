@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
-import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, useWindowDimensions } from 'react-native'
 import { useVideoPlayer, VideoView } from 'expo-video'
-import { fixed, fontFamily, fs } from '@/theme'
+import { Image } from '@/components/ui/image'
+import { fixed, fontFamily, fs, useColors } from '@/theme'
 import { getItem, setItem } from '@/lib/secure-storage'
 
-/** The flat blue of intro-logo.mp4 — the native splash and the moment before the first frame. */
-export const INTRO_BLUE = '#0435C4'
-/** How long the film plays before the app shows through: the gear turns, comes apart and starts to close. */
-const HOLD_MS = 4500
-const NAME = 'KUDAIBERDI'
-/** The line under the name — a different one each launch. Approved by the owner; in Russian on purpose. */
+/** How long the card holds before the app shows through. */
+const HOLD_MS = 4000
+/** The line under the card — a different one each launch. Approved by the owner; in Russian on purpose. */
 const TAGLINES = [
 	'Запчасти ищем мы, а не вы',
 	'Машина капризничает? Мы её уговорим',
@@ -33,23 +31,21 @@ async function nextTagline() {
 	setItem(LAST_TAGLINE, String(pick)).catch(() => {})
 	return TAGLINES[pick]
 }
-/** In the film the gear sits at 40 % of the height; the name goes under it. */
-const NAME_TOP = 0.53
 
 /**
- * On launch: the sign-in animation — the gear coming apart and back together like a watch — with the blueprint keyed
- * out. The film is already portrait and full of its own flat blue, so it covers the screen and no frame or colour
- * step shows (a video's colours never match a view's exactly). KUDAIBERDI builds up letter by letter, the line under
- * it follows, then everything fades into the app. Once per launch.
+ * On launch: the sign-in brand card — the moving gear on its blue blueprint, KUDAIBERDI on it — in the middle of
+ * the app's own background, a joke line under it, then a soft fade into the app. Once per launch; taps go through.
  */
 export function IntroSplash({ onDone }: { onDone: () => void }) {
-	const { height } = useWindowDimensions()
-	const player = useVideoPlayer(require('../../assets/video/intro-logo.mp4'), (p) => {
-		p.loop = false
+	const c = useColors()
+	const { width } = useWindowDimensions()
+	const cardWidth = Math.min(width - 40, 440)
+	const player = useVideoPlayer(require('../../assets/video/login-loop.mp4'), (p) => {
+		p.loop = true
 		p.muted = true
 		p.play()
 	})
-	const [letters] = useState(() => NAME.split('').map(() => new Animated.Value(0)))
+	const [card] = useState(() => new Animated.Value(0))
 	const [line] = useState(() => new Animated.Value(0))
 	const [fade] = useState(() => new Animated.Value(1))
 	const [tagline, setTagline] = useState('')
@@ -58,64 +54,48 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
 		let timer: ReturnType<typeof setTimeout> | undefined
 		nextTagline().then(setTagline)
 		AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-			if (reduce) {
-				letters.forEach((v) => v.setValue(1))
-				line.setValue(1)
-			} else {
-				Animated.sequence([
-					Animated.delay(900),
-					// the name builds up letter by letter, each one springing up into place
-					Animated.stagger(
-						55,
-						letters.map((v) => Animated.spring(v, { toValue: 1, friction: 6, tension: 140, useNativeDriver: true }))
-					),
-					Animated.timing(line, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-				]).start()
-			}
+			const ms = (n: number) => (reduce ? 0 : n)
+			Animated.timing(card, { toValue: 1, duration: ms(550), easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
+			Animated.timing(line, { toValue: 1, duration: ms(600), delay: ms(700), easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
 			timer = setTimeout(
-				() => Animated.timing(fade, { toValue: 0, duration: reduce ? 150 : 500, useNativeDriver: true }).start(() => onDone()),
+				() => Animated.timing(fade, { toValue: 0, duration: ms(450) || 150, useNativeDriver: true }).start(() => onDone()),
 				reduce ? 1200 : HOLD_MS
 			)
 		})
 		return () => clearTimeout(timer)
-	}, [letters, line, fade, onDone])
+	}, [card, line, fade, onDone])
 
 	return (
-		<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: fade, zIndex: 100, backgroundColor: INTRO_BLUE }]}>
-			<VideoView player={player} nativeControls={false} contentFit="cover" style={StyleSheet.absoluteFill} />
-			<View style={{ position: 'absolute', left: 0, right: 0, top: height * NAME_TOP, alignItems: 'center', gap: 8 }}>
-				<View style={{ flexDirection: 'row' }}>
-					{NAME.split('').map((ch, i) => (
-						<Animated.Text
-							key={i}
-							style={{
-								fontSize: fs.display,
-								lineHeight: 38,
-								fontFamily: fontFamily(800),
-								letterSpacing: 1,
-								color: fixed.white,
-								opacity: letters[i],
-								transform: [
-									{ translateY: letters[i].interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
-									{ scale: letters[i].interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
-								],
-							}}
-						>
-							{ch}
-						</Animated.Text>
-					))}
-				</View>
-				<Animated.View
-					style={{
-						opacity: line,
-						transform: [{ translateY: line.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
-					}}
-				>
-					<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(500), letterSpacing: 0.3, color: 'rgba(255,255,255,0.9)' }}>
-						{tagline}
-					</Text>
-				</Animated.View>
-			</View>
+		<Animated.View
+			pointerEvents="none"
+			style={[StyleSheet.absoluteFill, { zIndex: 100, opacity: fade, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', gap: 22 }]}
+		>
+			<Animated.View
+				style={{
+					width: cardWidth,
+					aspectRatio: 1086 / 690,
+					borderRadius: 28,
+					overflow: 'hidden',
+					backgroundColor: fixed.brandCard,
+					opacity: card,
+					transform: [{ scale: card.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
+				}}
+			>
+				<Image source={require('../../assets/video/login-poster.jpg')} style={StyleSheet.absoluteFill} />
+				<VideoView player={player} nativeControls={false} contentFit="cover" style={StyleSheet.absoluteFill} />
+				<Text style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: fs.display, lineHeight: 36, fontFamily: fontFamily(800), letterSpacing: -0.5, color: fixed.white }}>
+					KUDAIBERDI
+				</Text>
+			</Animated.View>
+			<Animated.View
+				style={{
+					paddingHorizontal: 28,
+					opacity: line,
+					transform: [{ translateY: line.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+				}}
+			>
+				<Text style={{ textAlign: 'center', fontSize: 21, lineHeight: 28, fontFamily: fontFamily(700), color: c.ink }}>{tagline}</Text>
+			</Animated.View>
 		</Animated.View>
 	)
 }
