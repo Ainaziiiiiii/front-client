@@ -2,13 +2,32 @@ import { useEffect, useState } from 'react'
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { fixed, fontFamily, fs } from '@/theme'
-import { t } from '@/i18n'
+import { getItem, setItem } from '@/lib/secure-storage'
 
 /** The flat blue of intro-logo.mp4 — the native splash and the moment before the first frame. */
 export const INTRO_BLUE = '#0435C4'
 /** How long the film plays before the app shows through: the gear turns, comes apart and starts to close. */
 const HOLD_MS = 4500
 const NAME = 'KUDAIBERDI'
+/** The line under the name — a different one each launch. Approved by the owner; in Russian on purpose. */
+const TAGLINES = [
+	'Запчасти ищем мы, а не вы',
+	'Машина капризничает? Мы её уговорим',
+	'Бегать по рынку больше не надо',
+	'Обходить 500 контейнеров? Не, не слышали',
+	'Машине — запчасть, вам — спокойствие',
+	'Не плачь, машинка, мы здесь',
+]
+const LAST_TAGLINE = 'intro.lastTagline'
+
+/** A random line, never the one shown last time. */
+async function nextTagline() {
+	const last = Number(await getItem(LAST_TAGLINE).catch(() => null))
+	const choices = TAGLINES.map((_, i) => i).filter((i) => i !== last)
+	const pick = choices[Math.floor(Math.random() * choices.length)]
+	setItem(LAST_TAGLINE, String(pick)).catch(() => {})
+	return TAGLINES[pick]
+}
 /** In the film the gear sits at 40 % of the height; the name goes under it. */
 const NAME_TOP = 0.53
 
@@ -28,9 +47,11 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
 	const [letters] = useState(() => NAME.split('').map(() => new Animated.Value(0)))
 	const [line] = useState(() => new Animated.Value(0))
 	const [fade] = useState(() => new Animated.Value(1))
+	const [tagline, setTagline] = useState('')
 
 	useEffect(() => {
 		let timer: ReturnType<typeof setTimeout> | undefined
+		nextTagline().then(setTagline)
 		AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
 			if (reduce) {
 				letters.forEach((v) => v.setValue(1))
@@ -86,7 +107,7 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
 					}}
 				>
 					<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(500), letterSpacing: 0.3, color: 'rgba(255,255,255,0.9)' }}>
-						{t('Запчасти и мастера за минуты')}
+						{tagline}
 					</Text>
 				</Animated.View>
 			</View>
