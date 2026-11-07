@@ -69,8 +69,8 @@ export default function BuyerHomeScreen() {
 	return (
 		<View style={{ flex: 1, backgroundColor: c.surface, paddingTop: insets.top }}>
 			<View style={{ minHeight: 68, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-				{/* Kyrgyz greeting by the time of day; under it the car, or a road wish while there is none. */}
-				<Greeting name={name} subtitle={car ? `${car.title} · ${car.year}` : 'Жолуңуз ачык болсун!'} />
+				{/* Kyrgyz greeting by the time of day, the car under it. */}
+				<Greeting name={name} subtitle={car ? `${car.title} · ${car.year}` : t('Машина не выбрана')} />
 				{/* No car yet — «Добавить»; switching cars is not on the home screen. */}
 				{car ? null : (
 					<Pressable
