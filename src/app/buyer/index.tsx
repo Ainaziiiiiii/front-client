@@ -33,6 +33,7 @@ import { useDeliveryOrders } from '@/api/delivery'
 import type { DeliveryOrder } from '@/api/types'
 import { t } from '@/i18n'
 import { openSignIn, requireSignIn } from '@/components/sign-in-prompt'
+import { Greeting } from '@/components/greeting'
 
 /** «Нужен мастер?» [03]: three services → the one-screen request [16], «Все услуги» → choose there. */
 const HOME_SERVICES: { code: string; label: string; icon: ComponentType<{ size?: number; color: string; strokeWidth?: number }> }[] = [
@@ -67,13 +68,9 @@ export default function BuyerHomeScreen() {
 
 	return (
 		<View style={{ flex: 1, backgroundColor: c.surface, paddingTop: insets.top }}>
-			<View style={{ height: 60, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-				<View style={{ flex: 1, gap: 2 }}>
-					<Text style={{ fontSize: fs.md, fontFamily: fontFamily(500), color: c.muted }}>{name ? t('Салам, {0}', name) : t('Салам')}</Text>
-					<Text numberOfLines={1} style={{ fontSize: fs.xl, fontFamily: fontFamily(700), color: c.ink }}>
-						{car ? `${car.title} · ${car.year}` : t('Машина не выбрана')}
-					</Text>
-				</View>
+			<View style={{ minHeight: 68, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+				{/* Kyrgyz greeting by the time of day; under it the car, or a road wish while there is none. */}
+				<Greeting name={name} subtitle={car ? `${car.title} · ${car.year}` : 'Жолуңуз ачык болсун!'} />
 				{/* No car yet — «Добавить»; switching cars is not on the home screen. */}
 				{car ? null : (
 					<Pressable
