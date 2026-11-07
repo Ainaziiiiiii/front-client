@@ -858,4 +858,5 @@ export const ky: Record<string, string> = {
 	'Баткен': 'Баткен',
 	'Код из WhatsApp': 'WhatsApp\'тан келген код',
 	'Отправим код в WhatsApp': 'Кодду WhatsApp\'ка жөнөтөбүз',
+	'Всё для вашего авто': 'Унааңыз үчүн баары',
 }

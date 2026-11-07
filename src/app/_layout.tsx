@@ -1,5 +1,5 @@
 import '../global.css'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { setAudioModeAsync } from 'expo-audio'
@@ -25,6 +25,7 @@ import { useColors } from '@/theme'
 import { ToastHost } from '@/components/ui/toast'
 import { PushPrimer } from '@/components/push-primer'
 import { KeyboardDoneBar } from '@/components/keyboard-done'
+import { IntroSplash } from '@/components/intro-splash'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -52,6 +53,9 @@ export default function RootLayout() {
 	useDictionariesVersion()
 
 	const ready = fontsLoaded && !booting
+	// The moving logo on launch — once, right after the native splash.
+	const [intro, setIntro] = useState(true)
+	const endIntro = useCallback(() => setIntro(false), [])
 
 	useEffect(() => {
 		if (ready) SplashScreen.hideAsync()
@@ -77,6 +81,7 @@ export default function RootLayout() {
 								<Stack.Screen name="master-answer" options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }} />
 							</Stack>
 							<KeyboardDoneBar />
+							{intro ? <IntroSplash onDone={endIntro} /> : null}
 							<PushPrimer />
 							<ToastHost />
 						</SafeAreaProvider>
