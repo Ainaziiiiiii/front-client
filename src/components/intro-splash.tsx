@@ -4,58 +4,90 @@ import { useVideoPlayer, VideoView } from 'expo-video'
 import { fixed, fontFamily, fs } from '@/theme'
 import { t } from '@/i18n'
 
-/**
- * The flat blue of intro-logo.mp4 — the sign-in film with its blueprint keyed out (every blue pixel replaced by this
- * colour, the silver and gold gear kept). Measured from the encoded file, so the film's edge never shows.
- */
+/** The flat blue of intro-logo.mp4 — the native splash and the moment before the first frame. */
 export const INTRO_BLUE = '#0435C4'
 /** How long the film plays before the app shows through: the gear turns, comes apart and starts to close. */
 const HOLD_MS = 4500
+const NAME = 'KUDAIBERDI'
+/** In the film the gear sits at 40 % of the height; the name goes under it. */
+const NAME_TOP = 0.53
 
 /**
- * On launch: the same animation as on sign-in — the gear coming apart and back together like a watch — on flat blue
- * with no blueprint, KUDAIBERDI and «Всё для вашего авто» under it, then a soft fade into the app. Once per launch.
+ * On launch: the sign-in animation — the gear coming apart and back together like a watch — with the blueprint keyed
+ * out. The film is already portrait and full of its own flat blue, so it covers the screen and no frame or colour
+ * step shows (a video's colours never match a view's exactly). KUDAIBERDI builds up letter by letter, the line under
+ * it follows, then everything fades into the app. Once per launch.
  */
 export function IntroSplash({ onDone }: { onDone: () => void }) {
-	const { width } = useWindowDimensions()
-	const filmH = width * (690 / 1086)
+	const { height } = useWindowDimensions()
 	const player = useVideoPlayer(require('../../assets/video/intro-logo.mp4'), (p) => {
 		p.loop = false
 		p.muted = true
 		p.play()
 	})
-	const [words] = useState(() => new Animated.Value(0))
+	const [letters] = useState(() => NAME.split('').map(() => new Animated.Value(0)))
+	const [line] = useState(() => new Animated.Value(0))
 	const [fade] = useState(() => new Animated.Value(1))
 
 	useEffect(() => {
 		let timer: ReturnType<typeof setTimeout> | undefined
 		AccessibilityInfo.isReduceMotionEnabled().then((reduce) => {
-			Animated.timing(words, { toValue: 1, duration: reduce ? 0 : 700, delay: reduce ? 0 : 900, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start()
+			if (reduce) {
+				letters.forEach((v) => v.setValue(1))
+				line.setValue(1)
+			} else {
+				Animated.sequence([
+					Animated.delay(900),
+					// the name builds up letter by letter, each one springing up into place
+					Animated.stagger(
+						55,
+						letters.map((v) => Animated.spring(v, { toValue: 1, friction: 6, tension: 140, useNativeDriver: true }))
+					),
+					Animated.timing(line, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+				]).start()
+			}
 			timer = setTimeout(
 				() => Animated.timing(fade, { toValue: 0, duration: reduce ? 150 : 500, useNativeDriver: true }).start(() => onDone()),
 				reduce ? 1200 : HOLD_MS
 			)
 		})
 		return () => clearTimeout(timer)
-	}, [words, fade, onDone])
+	}, [letters, line, fade, onDone])
 
 	return (
 		<Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: fade, zIndex: 100, backgroundColor: INTRO_BLUE }]}>
-			<View style={{ flex: 1, justifyContent: 'center' }}>
-				<View style={{ width, height: filmH }}>
-					<VideoView player={player} nativeControls={false} contentFit="contain" style={StyleSheet.absoluteFill} />
+			<VideoView player={player} nativeControls={false} contentFit="cover" style={StyleSheet.absoluteFill} />
+			<View style={{ position: 'absolute', left: 0, right: 0, top: height * NAME_TOP, alignItems: 'center', gap: 8 }}>
+				<View style={{ flexDirection: 'row' }}>
+					{NAME.split('').map((ch, i) => (
+						<Animated.Text
+							key={i}
+							style={{
+								fontSize: fs.display,
+								lineHeight: 38,
+								fontFamily: fontFamily(800),
+								letterSpacing: 1,
+								color: fixed.white,
+								opacity: letters[i],
+								transform: [
+									{ translateY: letters[i].interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) },
+									{ scale: letters[i].interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) },
+								],
+							}}
+						>
+							{ch}
+						</Animated.Text>
+					))}
 				</View>
 				<Animated.View
 					style={{
-						alignItems: 'center',
-						gap: 4,
-						marginTop: -filmH * 0.12,
-						opacity: words,
-						transform: [{ translateY: words.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
+						opacity: line,
+						transform: [{ translateY: line.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
 					}}
 				>
-					<Text style={{ fontSize: fs.display, lineHeight: 36, fontFamily: fontFamily(800), letterSpacing: -0.5, color: fixed.white }}>KUDAIBERDI</Text>
-					<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(500), color: 'rgba(255,255,255,0.88)' }}>{t('Всё для вашего авто')}</Text>
+					<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(500), letterSpacing: 0.3, color: 'rgba(255,255,255,0.9)' }}>
+						{t('Запчасти и мастера за минуты')}
+					</Text>
 				</Animated.View>
 			</View>
 		</Animated.View>
