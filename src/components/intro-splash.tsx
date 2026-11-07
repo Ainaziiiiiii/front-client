@@ -22,7 +22,8 @@ const LAST_TAGLINE = 'intro.lastTagline'
 
 /** A random line, never the one shown last time. */
 async function nextTagline() {
-	const last = Number(await getItem(LAST_TAGLINE).catch(() => null))
+	const saved = await getItem(LAST_TAGLINE).catch(() => null)
+	const last = saved === null ? -1 : Number(saved)
 	const choices = TAGLINES.map((_, i) => i).filter((i) => i !== last)
 	const pick = choices[Math.floor(Math.random() * choices.length)]
 	setItem(LAST_TAGLINE, String(pick)).catch(() => {})
