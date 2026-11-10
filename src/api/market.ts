@@ -50,6 +50,21 @@ export function useAddContainer() {
 	})
 }
 
+/**
+ * «Добавить ряд» — the typed row is not in the database: POST /market/rows creates it (not drawn on the map until
+ * the admin places it). An existing row comes back as is.
+ */
+export function useAddRow() {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: (code: string) => apiFetch<MarketRow>('/market/rows', { method: 'POST', body: { code } }),
+		onSuccess: (row) => {
+			queryClient.setQueryData<MarketRow[]>(marketKeys.rows, (list) => (list && !list.some((r) => r.id === row.id) ? [...list, row] : list))
+			queryClient.invalidateQueries({ queryKey: marketKeys.rows })
+		},
+	})
+}
+
 // ─── Market scheme for the map [15, 18] ──────────────────────────────────────
 
 const CACHE_NAME = 'market-map.json'

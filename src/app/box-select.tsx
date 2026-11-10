@@ -9,7 +9,7 @@ import { BrandTile, Label, PlusIcon, TickIcon } from '@/components/seller-v23'
 import { LocateIcon, SearchIcon } from '@/components/icons'
 import { addressAt, currentCoords } from '@/lib/locate'
 import { fixed, fontFamily, fs, useColors } from '@/theme'
-import { type Side, useAddContainer, useRowContainers, useRows } from '@/api/market'
+import { type Side, useAddContainer, useAddRow, useRowContainers, useRows } from '@/api/market'
 import { useBrands } from '@/api/directory'
 import { useMyShop, useRegisterShop, useRelocateShop } from '@/api/shop'
 import { useSession } from '@/store/useSession'
@@ -50,6 +50,7 @@ export default function BoxSelectScreen() {
 	const register = useRegisterShop()
 	const relocate = useRelocateShop()
 	const addContainer = useAddContainer()
+	const addRow = useAddRow()
 
 	const current = shop.data?.location
 	// Both typed: a known row and box are matched, a missing box is added, an unknown row is kept as text.
@@ -96,8 +97,8 @@ export default function BoxSelectScreen() {
 	}, [rows.data])
 	const code = rowCode(rowText)
 	const row = code ? sortedRows.find((r) => r.code.toUpperCase() === code) : undefined
-	// No such row — the place is kept as text (only when registering: a move needs a real box).
-	const manual = !hasShop && Boolean(code) && rows.isSuccess && !row
+	// No such row yet — «Добавить ряд» creates it, then it works like any other.
+	const missingRow = Boolean(code) && rows.isSuccess && !row
 	const detail = useRowContainers(row?.id ?? 0)
 
 	// The side is asked only when the row has two and the number alone doesn't tell which.
@@ -124,10 +125,8 @@ export default function BoxSelectScreen() {
 
 	const ready = store
 		? Boolean(name.trim() && address.trim() && point && picked.length > 0)
-		: manual
-			? Boolean(typed > 0 && picked.length > 0)
-			: Boolean((slot ? !taken : addReady) && (hasShop || picked.length > 0))
-	const error = register.error ?? relocate.error ?? addContainer.error
+		: Boolean((slot ? !taken : addReady) && (hasShop || picked.length > 0))
+	const error = register.error ?? relocate.error ?? addContainer.error ?? addRow.error
 	const field = {
 		height: 52,
 		borderRadius: 14,
@@ -151,11 +150,6 @@ export default function BoxSelectScreen() {
 		}
 		const done = (shop: { status: string }) =>
 			shop.status === 'PENDING_VERIFICATION' ? router.replace('/under-review?kind=shop') : (router.replace('/seller'), askForPushAt('shop'))
-		if (manual) {
-			// Kept in Russian like every place name on the server: «Ряд К, конт. 5».
-			register.mutate({ manualPlace: `Ряд ${code}, конт. ${typed}`, brandIds: picked }, { onSuccess: done })
-			return
-		}
 		const go = (containerId: number) =>
 			hasShop
 				? relocate.mutate(containerId, { onSuccess: () => (toast(t('Контейнер изменён')), router.back()) })
@@ -282,19 +276,32 @@ export default function BoxSelectScreen() {
 								})}
 							</View>
 						) : null}
-						{code && typed > 0 && !placeError ? (
+						{missingRow ? (
+							<View style={{ gap: 8 }}>
+								<Text style={{ fontSize: fs.md, lineHeight: 19, fontFamily: fontFamily(500), color: c.muted }}>
+									{t('Ряда {0} у нас пока нет', code)}
+								</Text>
+								<Pressable
+									onPress={() => addRow.mutate(code)}
+									disabled={addRow.isPending}
+									style={{ height: 48, borderRadius: 14, borderWidth: 2, borderStyle: 'dashed', borderColor: c.dashedBrand, backgroundColor: c.brandTint, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: addRow.isPending ? 0.6 : 1 }}
+								>
+									<PlusIcon size={18} color={c.brandStrong} />
+									<Text style={{ fontSize: fs.base, fontFamily: fontFamily(700), color: c.brandStrong }}>
+										{addRow.isPending ? t('Добавляем…') : t('Добавить ряд {0}', code)}
+									</Text>
+								</Pressable>
+							</View>
+						) : null}
+						{row && typed > 0 && !placeError ? (
 							<Text style={{ fontSize: fs.md, lineHeight: 19, fontFamily: fontFamily(500), color: slot ? c.success : c.muted }}>
-								{manual
-									? t('Ряда {0} нет на схеме — магазин заработает сразу, место покажем текстом.', code)
-									: !row
-										? hasShop ? t('Ряда {0} нет на схеме', code) : null
-										: needSide && !side
-											? t('Выберите сторону ряда')
-											: slot
-												? t('{0} · конт. {1} — нашли', row.label, typed)
-												: adding
-													? t('Контейнера {0} ещё нет — добавим его в {1}', typed, row.label)
-													: null}
+								{needSide && !side
+									? t('Выберите сторону ряда')
+									: slot
+										? t('{0} · конт. {1} — нашли', row.label, typed)
+										: adding
+											? t('Контейнера {0} ещё нет — добавим его в {1}', typed, row.label)
+											: null}
 							</Text>
 						) : null}
 						{placeError ? (
