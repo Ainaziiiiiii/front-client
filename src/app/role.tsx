@@ -10,6 +10,7 @@ import { fixed, fontFamily, fs, useColors } from '@/theme'
 import { useSetRole } from '@/api/me'
 import type { UserRole } from '@/api/types'
 import { t } from '@/i18n'
+import { useSession } from '@/store/useSession'
 
 const ROLES = [
 	{ value: 'BUYER' as const, who: t('покупатель'), title: t('Ищу запчасти'), description: t('Для своей машины — продавцы рынка ответят с ценой, найду и мастера'), icon: LoupeIcon },
@@ -105,6 +106,10 @@ export default function RoleScreen() {
 						})
 					}
 				/>
+				{/* Wrong number or a reset account — back to the phone screen without choosing a role. */}
+				<Pressable onPress={() => useSession.getState().signOut()} hitSlop={8} style={{ height: 44, marginTop: 4, alignItems: 'center', justifyContent: 'center' }}>
+					<Text style={{ fontSize: fs.base, fontFamily: fontFamily(600), color: c.muted }}>{t('Войти с другим номером')}</Text>
+				</Pressable>
 			</View>
 		</View>
 	)
