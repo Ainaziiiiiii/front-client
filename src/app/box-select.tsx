@@ -449,8 +449,12 @@ function OtherBrands({
 	const c = useColors()
 	const [q, setQ] = useState('')
 	const query = q.trim().toLowerCase()
+	// The server knows folk names («мерс», «бэха», «тойота»); the local match covers the moment before it answers.
+	const found = useBrands(query ? { q: q.trim() } : {})
 	const list = query
-		? brands.filter((b) => b.name.toLowerCase().includes(query) || b.shortName.toLowerCase().includes(query))
+		? found.data && !found.isPlaceholderData
+			? found.data
+			: brands.filter((b) => b.name.toLowerCase().includes(query) || b.shortName.toLowerCase().includes(query))
 		: brands
 
 	return (

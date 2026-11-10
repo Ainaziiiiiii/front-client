@@ -109,7 +109,10 @@ export function SelectSheet<K extends string | number>({
 						<SearchIcon size={22} color={c.muted} strokeWidth={2.4} />
 						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
 							value={q}
-							onChangeText={setQ}
+							onChangeText={(text) => {
+								setQ(text)
+								onSearch?.(text.trim())
+							}}
 							autoFocus
 							placeholder={searchPlaceholder}
 							placeholderTextColor={c.fillInk}
