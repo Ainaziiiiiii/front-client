@@ -2,11 +2,14 @@
 import { useMemo } from 'react'
 import { Platform } from 'react-native'
 import { File, Paths } from 'expo-file-system'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { API_URL, apiFetch } from '@/lib/api'
 import { buildMarketGeo, bundledScheme, type MarketScheme } from '@/lib/market-geojson'
 import { marketKeys } from './keys'
 import type { MapHighlight, MarketRoute, MarketRow, MarketSearch, QrResolve, RowDetail } from './types'
+
+export type Side = 'NORTH' | 'SOUTH' | 'WEST' | 'EAST'
+export type ContainerSlot = RowDetail['sides'][number]['containers'][number]
 
 export function useRows() {
 	return useQuery({
@@ -27,6 +30,23 @@ export function useRowContainers(rowId: number, brandId?: number) {
 			apiFetch<RowDetail>(`/market/rows/${rowId}/containers`, { query: { brandId }, signal }),
 		// 10а asks before the row list has loaded.
 		enabled: rowId > 0,
+	})
+}
+
+/**
+ * «Моего контейнера нет в списке» — the seller adds it to the row: POST /market/rows/{id}/containers.
+ * `side` only when the row has two sides; the server takes the row's only side otherwise. An inactive box comes back to life.
+ */
+export function useAddContainer() {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: ({ rowId, number, side }: { rowId: number; number: number; side?: Side }) =>
+			apiFetch<ContainerSlot>(`/market/rows/${rowId}/containers`, { method: 'POST', body: { number, side } }),
+		onSuccess: (_, { rowId }) => {
+			queryClient.invalidateQueries({ queryKey: marketKeys.row(rowId) })
+			queryClient.invalidateQueries({ queryKey: marketKeys.rows })
+			queryClient.invalidateQueries({ queryKey: marketKeys.map })
+		},
 	})
 }
 
