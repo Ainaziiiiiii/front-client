@@ -10,7 +10,6 @@ import { LocateIcon, SearchIcon } from '@/components/icons'
 import { addressAt, currentCoords } from '@/lib/locate'
 import { fixed, fontFamily, fs, useColors } from '@/theme'
 import { type Side, useAddContainer, useRowContainers, useRows } from '@/api/market'
-import { SelectField, SelectSheet } from '@/components/select-sheet'
 import { useBrands } from '@/api/directory'
 import { useMyShop, useRegisterShop, useRelocateShop } from '@/api/shop'
 import { useSession } from '@/store/useSession'
@@ -22,10 +21,11 @@ import { KEYBOARD_DONE } from '@/components/keyboard-done'
 
 /** Rows in the order of the mockup grid [11]; rows the mockup doesn't know go after them. */
 const ROW_ORDER = ['19', '18', '17', '16', '15', '14', '13', '12', '11', '10', '9', '8', '7', '6', '5', '4', '1', t('К'), t('Ц'), t('Л'), t('Н'), t('Я'), t('С'), t('Ж'), t('Д'), t('В'), t('Ю'), t('Х'), t('У')]
-/** The row picked as «моего ряда нет в списке». */
-const MANUAL = -1
-/** The container picked as «моего контейнера нет в списке». */
-const ADD = -1
+/** Latin letters typed for Cyrillic row codes: «K» → «К». */
+const LOOKALIKE: Record<string, string> = { A: 'А', B: 'В', C: 'С', E: 'Е', H: 'Н', K: 'К', M: 'М', O: 'О', P: 'Р', T: 'Т', X: 'Х', Y: 'У' }
+/** «ряд к», «Ряд 4», «k» → «К», «4». */
+const rowCode = (text: string) =>
+	text.trim().replace(/^ряд\s*/i, '').toUpperCase().replace(/[A-Z]/g, (ch) => LOOKALIKE[ch] ?? ch)
 const SIDE_NAMES: Record<Side, string> = {
 	NORTH: t('Северная сторона'),
 	SOUTH: t('Южная сторона'),
@@ -52,14 +52,10 @@ export default function BoxSelectScreen() {
 	const addContainer = useAddContainer()
 
 	const current = shop.data?.location
-	const [rowId, setRowId] = useState<number | null>(null)
+	// Both typed: a known row and box are matched, a missing box is added, an unknown row is kept as text.
+	const [rowText, setRowText] = useState('')
 	const [number, setNumber] = useState('')
-	// The container picked from the list, or ADD — not in the list, typed.
-	const [boxId, setBoxId] = useState<number | null>(null)
-	const adding = boxId === ADD
 	const [side, setSide] = useState<Side | null>(null)
-	const [manualRow, setManualRow] = useState('')
-	const [sheet, setSheet] = useState<'row' | 'box' | null>(null)
 	const [picked, setPicked] = useState<number[]>([])
 	const [othersOpen, setOthersOpen] = useState(false)
 	// «Это мой контейнер» — a taken box that is actually yours.
@@ -98,28 +94,27 @@ export default function BoxSelectScreen() {
 		const rank = (code: string) => (ROW_ORDER.includes(code) ? ROW_ORDER.indexOf(code) : ROW_ORDER.length)
 		return [...(rows.data ?? [])].sort((a, b) => rank(a.code) - rank(b.code))
 	}, [rows.data])
-	// MANUAL — «моего ряда нет в списке»: the row and the number are typed, the place is kept as text.
-	const manual = !hasShop && rowId === MANUAL
-	const activeRowId = manual ? null : (rowId ?? current?.rowId ?? null)
-	const row = sortedRows.find((r) => r.id === activeRowId)
-	const detail = useRowContainers(activeRowId ?? 0)
+	const code = rowCode(rowText)
+	const row = code ? sortedRows.find((r) => r.code.toUpperCase() === code) : undefined
+	// No such row — the place is kept as text (only when registering: a move needs a real box).
+	const manual = !hasShop && Boolean(code) && rows.isSuccess && !row
+	const detail = useRowContainers(row?.id ?? 0)
 
-	// Containers of the row in one list; the side is named only when the row has two of them.
+	// The side is asked only when the row has two and the number alone doesn't tell which.
 	const sides = (detail.data?.sides ?? []).filter((item) => item.containers.length > 0)
 	const twoSides = sides.length > 1
-	const boxes = sides.flatMap((item) => item.containers.map((box) => ({ ...box, side: item.side })))
-	const sideName = (side: Side) => SIDE_NAMES[side]
-	const boxLabel = (box: { number: number; side: Side }) =>
-		twoSides ? t('Контейнер {0} · {1}', box.number, sideName(box.side)) : t('Контейнер {0}', box.number)
-
-	// A box that is not in the list yet: its number (and the side, when the row has two).
+	const sideName = (value: Side) => SIDE_NAMES[value]
 	const typed = Number(number)
-	const newSide: Side | undefined = twoSides ? (side ?? undefined) : undefined
-	const sameBox = adding && number ? boxes.find((box) => box.number === typed && (!twoSides || box.side === newSide)) : undefined
-	const slot = adding ? sameBox : boxes.find((box) => box.id === boxId)
+	const matches = row && typed > 0
+		? sides.flatMap((item) => item.containers.filter((box) => box.number === typed).map((box) => ({ ...box, side: item.side })))
+		: []
+	const needSide = twoSides && matches.length !== 1
+	const slot = matches.length === 1 && !(needSide && side) ? matches[0] : matches.find((box) => box.side === side)
+	// Not in the database yet — added on «Начать».
+	const adding = Boolean(row && typed > 0 && detail.isSuccess && !slot && (!needSide || side))
 	const taken = slot ? slot.occupied && slot.id !== current?.containerId : false
 	const placeError = taken && slot ? t('Контейнер {0} уже занят другим продавцом', slot.number) : null
-	const addReady = adding && typed > 0 && (!twoSides || Boolean(newSide))
+	const addReady = adding
 
 	const all = brands.data ?? []
 	const popular = all.filter((b) => b.popular).slice(0, TILES)
@@ -130,7 +125,7 @@ export default function BoxSelectScreen() {
 	const ready = store
 		? Boolean(name.trim() && address.trim() && point && picked.length > 0)
 		: manual
-			? Boolean(manualRow.trim() && typed > 0 && picked.length > 0)
+			? Boolean(typed > 0 && picked.length > 0)
 			: Boolean((slot ? !taken : addReady) && (hasShop || picked.length > 0))
 	const error = register.error ?? relocate.error ?? addContainer.error
 	const field = {
@@ -158,7 +153,6 @@ export default function BoxSelectScreen() {
 			shop.status === 'PENDING_VERIFICATION' ? router.replace('/under-review?kind=shop') : (router.replace('/seller'), askForPushAt('shop'))
 		if (manual) {
 			// Kept in Russian like every place name on the server: «Ряд К, конт. 5».
-			const code = manualRow.trim().replace(/^ряд\s*/i, '').toUpperCase()
 			register.mutate({ manualPlace: `Ряд ${code}, конт. ${typed}`, brandIds: picked }, { onSuccess: done })
 			return
 		}
@@ -167,8 +161,8 @@ export default function BoxSelectScreen() {
 				? relocate.mutate(containerId, { onSuccess: () => (toast(t('Контейнер изменён')), router.back()) })
 				: register.mutate({ containerId, brandIds: picked }, { onSuccess: done })
 		if (slot) return go(slot.id)
-		if (!addReady || !activeRowId) return
-		addContainer.mutate({ rowId: activeRowId, number: typed, side: newSide }, { onSuccess: (box) => go(box.id) })
+		if (!addReady || !row) return
+		addContainer.mutate({ rowId: row.id, number: typed, side: twoSides ? (side ?? undefined) : undefined }, { onSuccess: (box) => go(box.id) })
 	}
 
 	return (
@@ -236,81 +230,72 @@ export default function BoxSelectScreen() {
 					</>
 				) : (
 					<>
-						<SelectField
-							label={t('Ряд')}
-							value={manual ? t('Моего ряда нет в списке') : row?.label}
-							placeholder={t('Выберите ряд')}
-							onPress={() => setSheet('row')}
+						<Label>{t('Ряд')}</Label>
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
+							value={rowText}
+							onChangeText={(text) => {
+								setRowText(text.slice(0, 12))
+								setSide(null)
+							}}
+							autoCapitalize="characters"
+							autoCorrect={false}
+							placeholder={t('Например, 4 или К')}
+							placeholderTextColor={c.fillInk}
+							style={field}
 						/>
-
-						{manual ? (
-							<>
-								<Label>{t('Ряд')}</Label>
-								<TextInput inputAccessoryViewID={KEYBOARD_DONE}
-									value={manualRow}
-									onChangeText={(text) => setManualRow(text.slice(0, 12))}
-									autoCapitalize="characters"
-									placeholder={t('Например, К')}
-									placeholderTextColor={c.fillInk}
-									style={field}
-								/>
-							</>
-						) : (
-							<SelectField
-								label={t('Контейнер')}
-								value={adding ? t('Моего контейнера нет в списке') : slot ? boxLabel(slot) : null}
-								placeholder={row ? t('Выберите контейнер') : t('Сначала выберите ряд')}
-								disabled={!row}
-								onPress={() => setSheet('box')}
-							/>
-						)}
-
-						{manual || adding ? (
-							<>
-								<Label>{t('Номер контейнера')}</Label>
-								<TextInput inputAccessoryViewID={KEYBOARD_DONE}
-									value={number}
-									onChangeText={(text) => setNumber(text.replace(/\D/g, '').slice(0, 3))}
-									keyboardType="number-pad"
-									placeholder={t('Например, 12')}
-									placeholderTextColor={c.fillInk}
-									style={field}
-								/>
-								{adding && twoSides ? (
-									<View style={{ flexDirection: 'row', gap: 8 }}>
-										{sides.map(({ side: value }) => {
-											const active = side === value
-											return (
-												<Pressable
-													key={value}
-													onPress={() => setSide(value)}
-													style={{
-														flex: 1,
-														height: 44,
-														borderRadius: 12,
-														borderWidth: 1.5,
-														borderColor: active ? c.brand : c.border,
-														backgroundColor: active ? c.brand : c.card,
-														alignItems: 'center',
-														justifyContent: 'center',
-													}}
-												>
-													<Text style={{ fontSize: fs.md, fontFamily: fontFamily(active ? 700 : 600), color: active ? fixed.white : c.ink }}>
-														{sideName(value)}
-													</Text>
-												</Pressable>
-											)
-										})}
-									</View>
-								) : null}
-								<Text style={{ fontSize: fs.md, lineHeight: 19, fontFamily: fontFamily(400), color: c.muted }}>
-									{manual
-										? t('Магазин заработает сразу, место покажем текстом — на карту его добавит администрация.')
-										: sameBox
-											? t('Такой контейнер уже есть — выберем его.')
-											: t('Добавим контейнер в ряд {0}, он появится на карте.', row?.code ?? '')}
-								</Text>
-							</>
+						<Label>{t('Номер контейнера')}</Label>
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
+							value={number}
+							onChangeText={(text) => {
+								setNumber(text.replace(/\D/g, '').slice(0, 3))
+								setSide(null)
+							}}
+							keyboardType="number-pad"
+							placeholder={t('Например, 12')}
+							placeholderTextColor={c.fillInk}
+							style={field}
+						/>
+						{row && typed > 0 && needSide ? (
+							<View style={{ flexDirection: 'row', gap: 8 }}>
+								{sides.map(({ side: value }) => {
+									const active = side === value
+									return (
+										<Pressable
+											key={value}
+											onPress={() => setSide(value)}
+											style={{
+												flex: 1,
+												height: 44,
+												borderRadius: 12,
+												borderWidth: 1.5,
+												borderColor: active ? c.brand : c.border,
+												backgroundColor: active ? c.brand : c.card,
+												alignItems: 'center',
+												justifyContent: 'center',
+											}}
+										>
+											<Text style={{ fontSize: fs.md, fontFamily: fontFamily(active ? 700 : 600), color: active ? fixed.white : c.ink }}>
+												{sideName(value)}
+											</Text>
+										</Pressable>
+									)
+								})}
+							</View>
+						) : null}
+						{code && typed > 0 && !placeError ? (
+							<Text style={{ fontSize: fs.md, lineHeight: 19, fontFamily: fontFamily(500), color: slot ? c.success : c.muted }}>
+								{manual
+									? t('Ряда {0} нет на схеме — магазин заработает сразу, место покажем текстом.', code)
+									: !row
+										? hasShop ? t('Ряда {0} нет на схеме', code) : null
+										: needSide && !side
+											? t('Выберите сторону ряда')
+											: slot
+												? t('{0} · конт. {1} — нашли', row.label, typed)
+												: adding
+													? t('Контейнера {0} ещё нет — добавим его в {1}', typed, row.label)
+													: null}
+							</Text>
 						) : null}
 						{placeError ? (
 							<View style={{ gap: 4 }}>
@@ -381,53 +366,12 @@ export default function BoxSelectScreen() {
 				</View>
 			)}
 
-			{sheet === 'row' ? (
-				<SelectSheet<number>
-					title={t('Ряд')}
-					options={[
-						...sortedRows.map((item) => ({ key: item.id, label: item.label })),
-						...(hasShop ? [] : [{ key: MANUAL, label: t('Моего ряда нет в списке'), sub: t('Впишу ряд и номер сам') }]),
-					]}
-					selected={manual ? MANUAL : activeRowId}
-					onPick={(key) => {
-						setRowId(key)
-						setBoxId(null)
-						setSide(null)
-						setNumber('')
-						setSheet(null)
-					}}
-					onClose={() => setSheet(null)}
-				/>
-			) : null}
-			{sheet === 'box' && row ? (
-				<SelectSheet<number>
-					title={row.label}
-					options={[
-						...boxes.map((box) => ({
-							key: box.id,
-							label: boxLabel(box),
-							sub: box.occupied && box.id !== current?.containerId ? t('Занят') : null,
-						})),
-						{ key: ADD, label: t('Моего контейнера нет в списке'), sub: t('Добавлю номер сам') },
-					]}
-					selected={boxId}
-					onPick={(key) => {
-						setBoxId(key)
-						setNumber('')
-						setSide(null)
-						setSheet(null)
-					}}
-					onClose={() => setSheet(null)}
-				/>
-			) : null}
-
 			<ClaimSheet
 				box={claim && row ? { ...claim, place: t('{0} · конт. {1}', row.label, claim.number) } : null}
 				onClose={() => setClaim(null)}
 				onFree={(free) => {
 					setClaim(null)
-					const box = boxes.find((item) => item.number === free.number)
-					if (box) setBoxId(box.id)
+					setNumber(String(free.number))
 				}}
 			/>
 		</View>
