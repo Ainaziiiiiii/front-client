@@ -131,7 +131,14 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 		}
 		mapRef.current = map
 
+		// Не догрузилась плитка подложки (медленная сеть) — MapLibre дорисует остальное, карта живая.
+		// Ошибка на весь экран — только если карта так и не запустилась (стиль, WebGL).
 		map.on('error', (event) => {
+			const tileFailed = 'tile' in event || 'sourceId' in event || /\.pbf|tiles\./.test(event.error?.message ?? '')
+			if (tileFailed || map.loaded()) {
+				console.warn('[market-map] ', event.error?.message ?? event)
+				return
+			}
 			setStatus('error')
 			setErrorText(event.error?.message ?? t('Неизвестная ошибка карты'))
 			console.error('[market-map] ', event.error ?? event)
