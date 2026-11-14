@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, type Ref } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 import { StyleSheet, View } from 'react-native'
 import {
 	Camera,
@@ -11,6 +11,8 @@ import {
 } from '@maplibre/maplibre-react-native'
 import { marketMapStyle } from '@/data/map-style'
 import { routeToGeoJSON } from '@/lib/market-geojson'
+import { cellLayers, pulseAt, type CellLayer } from '@/lib/market-cell-layers'
+import type { MarketGeo } from '@/lib/market-geojson'
 import { useMarketGeo } from '@/api/market'
 import { fixed, raw, useColors } from '@/theme'
 
@@ -35,6 +37,8 @@ export interface MarketMapLiveHandle {
 	zoomBy: (delta: number) => void
 	/** Вернуть обзор всего рынка. */
 	reset: () => void
+	/** Показать все точки ([lon, lat]) с отступами — маршрут целиком над шторкой. */
+	fitTo: (points: [number, number][], padding?: { top: number; bottom: number; left: number; right: number }) => void
 }
 
 interface MarketMapLiveProps {
@@ -44,14 +48,58 @@ interface MarketMapLiveProps {
 	route?: number[][]
 	/** Показывать точку пользователя по GPS. */
 	showUser?: boolean
+	/** Нужный контейнер — яркая метка с номером. */
+	targetContainerId?: number
+	/** Контейнеры, подсвеченные фильтром («где продают Toyota»). */
+	highlightedContainerIds?: number[]
+	/** Тап по контейнеру; shopId — продавец в нём (0 — нет). */
+	onContainerPress?: (containerId: number, shopId: number) => void
+}
+
+/** Метка цели — отдельно, чтобы «дыхание» (~12 кадров/с) не перерисовывало всю карту. */
+function TargetSource({ target }: { target: MarketGeo['target'] }) {
+	const c = useColors()
+	const [scale, setScale] = useState(1)
+	const active = target.features.length > 0
+	useEffect(() => {
+		if (!active) return
+		const timer = setInterval(() => setScale(pulseAt(Date.now())), 80)
+		return () => clearInterval(timer)
+	}, [active])
+	return (
+		<GeoJSONSource id="market-target" data={target}>
+			{cellLayers(c, scale)
+				.filter((layer) => layer.source === 'market-target')
+				.map((layer) => (
+					<CellLayerView key={layer.id} layer={layer} />
+				))}
+		</GeoJSONSource>
+	)
+}
+
+/** Слой контейнеров из общего описания (lib/market-cell-layers) — те же, что в вебе. */
+function CellLayerView({ layer }: { layer: CellLayer }) {
+	return (
+		<Layer
+			id={layer.id}
+			type={layer.type}
+			minzoom={layer.minzoom}
+			maxzoom={layer.maxzoom}
+			filter={layer.filter as Expr}
+			layout={layer.layout as Expr}
+			paint={layer.paint as Expr}
+		/>
+	)
 }
 
 export const MarketMapLive = forwardRef(function MarketMapLive(
-	{ highlightedRowIds = [], route, showUser = true }: MarketMapLiveProps,
+	{ highlightedRowIds = [], route, showUser = true, targetContainerId, highlightedContainerIds, onContainerPress }: MarketMapLiveProps,
 	ref: Ref<MarketMapLiveHandle>,
 ) {
 	const c = useColors()
-	const geo = useMarketGeo(highlightedRowIds)
+	const geo = useMarketGeo(highlightedRowIds, targetContainerId, highlightedContainerIds)
+	const layers = cellLayers(c)
+	const layersOf = (source: CellLayer['source']) => layers.filter((layer) => layer.source === source)
 	const marketCenter = geo.center
 	const camera = useRef<CameraRef>(null)
 	const currentZoom = useRef(MARKET_ZOOM)
@@ -86,6 +134,15 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 		reset() {
 			currentZoom.current = MARKET_ZOOM
 			camera.current?.flyTo({ center: marketCenter, zoom: MARKET_ZOOM, duration: 600 })
+		},
+		fitTo(points, padding = { top: 80, bottom: 80, left: 40, right: 40 }) {
+			if (!points.length) return
+			const lons = points.map(([lon]) => lon)
+			const lats = points.map(([, lat]) => lat)
+			camera.current?.fitBounds([Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)], {
+				padding,
+				duration: 700,
+			})
 		},
 	}))
 
@@ -180,6 +237,25 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 					/>
 				</GeoJSONSource>
 
+				{/* контейнеры: ячейки (тап по магазину → профиль продавца) и номера */}
+				<GeoJSONSource
+					id="market-cells"
+					data={geo.cells}
+					onPress={(event) => {
+						const props = event.nativeEvent.features?.[0]?.properties
+						if (props?.containerId) onContainerPress?.(Number(props.containerId), Number(props.shopId) || 0)
+					}}
+				>
+					{layersOf('market-cells').map((layer) => (
+						<CellLayerView key={layer.id} layer={layer} />
+					))}
+				</GeoJSONSource>
+				<GeoJSONSource id="market-cell-labels" data={geo.cellLabels}>
+					{layersOf('market-cell-labels').map((layer) => (
+						<CellLayerView key={layer.id} layer={layer} />
+					))}
+				</GeoJSONSource>
+
 				<GeoJSONSource id="market-labels" data={geo.labels}>
 					<Layer
 						id="market-label"
@@ -205,7 +281,7 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 						type="circle"
 						paint={{
 							'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, 4, 19, 9] as Expr,
-							'circle-color': c.brand,
+							'circle-color': c.ink,
 							'circle-stroke-color': fixed.white,
 							'circle-stroke-width': 2,
 						}}
@@ -244,6 +320,9 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 						/>
 					</GeoJSONSource>
 				) : null}
+
+				{/* метка нужного контейнера — поверх маршрута */}
+				<TargetSource target={geo.target} />
 
 				{showUser ? <UserLocation animated accuracy heading /> : null}
 			</Map>

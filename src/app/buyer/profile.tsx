@@ -91,7 +91,7 @@ function BuyerProfileScreen() {
 					<Text style={{ fontSize: fs.md, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Изменить')}</Text>
 				</Pressable>
 
-				<Caps>{t('Мои машины')}</Caps>
+				<Caps large>{t('Мои машины')}</Caps>
 				{(cars.data ?? []).filter((car) => !hidden.includes(car.id)).map((car) => (
 					<View key={car.id} style={{ borderRadius: 18, backgroundColor: c.card, padding: 14, gap: 10 }}>
 						<View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

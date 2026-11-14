@@ -8,6 +8,7 @@ import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { marketMapStyle } from '@/data/map-style'
 import { type MarketGeo, routeToGeoJSON } from '@/lib/market-geojson'
+import { cellLayers, pulseAt } from '@/lib/market-cell-layers'
 import { useMarketGeo } from '@/api/market'
 import { fixed, fs, raw, useColors } from '@/theme'
 import { t } from '@/i18n'
@@ -30,12 +31,20 @@ export interface MarketMapLiveHandle {
 	focusOnMe: (zoom?: number) => Promise<void>
 	zoomBy: (delta: number) => void
 	reset: () => void
+	/** Показать все точки ([lon, lat]) с отступами — маршрут целиком над шторкой. */
+	fitTo: (points: [number, number][], padding?: { top: number; bottom: number; left: number; right: number }) => void
 }
 
 interface MarketMapLiveProps {
 	highlightedRowIds?: number[]
 	route?: number[][]
 	showUser?: boolean
+	/** Нужный контейнер — яркая метка с номером. */
+	targetContainerId?: number
+	/** Контейнеры, подсвеченные фильтром («где продают Toyota»). */
+	highlightedContainerIds?: number[]
+	/** Тап по контейнеру; shopId — продавец в нём (0 — нет). */
+	onContainerPress?: (containerId: number, shopId: number) => void
 }
 
 /** `hl` — the row is highlighted, `muted` — another one is (set by useMarketGeo). */
@@ -51,14 +60,19 @@ function setSources(map: maplibregl.Map, geo: MarketGeo) {
 	set('market-blocks', geo.blocks)
 	set('market-labels', geo.labels)
 	set('market-entrances', geo.entrances)
+	set('market-cells', geo.cells)
+	set('market-cell-labels', geo.cellLabels)
+	set('market-target', geo.target)
 }
 
 export const MarketMapLive = forwardRef(function MarketMapLive(
-	{ highlightedRowIds = [], route, showUser = true }: MarketMapLiveProps,
+	{ highlightedRowIds = [], route, showUser = true, targetContainerId, highlightedContainerIds, onContainerPress }: MarketMapLiveProps,
 	ref: Ref<MarketMapLiveHandle>,
 ) {
 	const c = useColors()
-	const geo = useMarketGeo(highlightedRowIds)
+	const geo = useMarketGeo(highlightedRowIds, targetContainerId, highlightedContainerIds)
+	const onContainerPressRef = useRef(onContainerPress)
+	onContainerPressRef.current = onContainerPress
 	const marketCenter = geo.center
 	const geoRef = useRef(geo)
 	const routeRef = useRef(route)
@@ -66,6 +80,7 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 	const mapRef = useRef<maplibregl.Map | null>(null)
 	const userMarkerRef = useRef<maplibregl.Marker | null>(null)
 	const geoWatchId = useRef<number | null>(null)
+	const pulseFrame = useRef<number | null>(null)
 	const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 	const [errorText, setErrorText] = useState('')
 
@@ -88,6 +103,12 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 		},
 		reset() {
 			mapRef.current?.flyTo({ center: marketCenter, zoom: MARKET_ZOOM, duration: 600 })
+		},
+		fitTo(points, padding = { top: 80, bottom: 80, left: 40, right: 40 }) {
+			if (!points.length || !mapRef.current) return
+			const bounds = new maplibregl.LngLatBounds(points[0], points[0])
+			points.forEach((point) => bounds.extend(point))
+			mapRef.current.fitBounds(bounds, { padding, maxZoom: 19, duration: 700 })
 		},
 	}))
 
@@ -178,6 +199,25 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 				},
 			})
 
+			// контейнеры: ячейки и номера — над рядами, под подписями рядов
+			map.addSource('market-cells', { type: 'geojson', data: geoRef.current.cells })
+			map.addSource('market-cell-labels', { type: 'geojson', data: geoRef.current.cellLabels })
+			map.addSource('market-target', { type: 'geojson', data: geoRef.current.target })
+			const layers = cellLayers(c)
+			layers
+				.filter((layer) => layer.source !== 'market-target')
+				.forEach((layer) => map.addLayer(layer as maplibregl.LayerSpecification))
+			map.on('click', 'market-cell-fill', (event) => {
+				const props = event.features?.[0]?.properties
+				if (props?.containerId) onContainerPressRef.current?.(Number(props.containerId), Number(props.shopId) || 0)
+			})
+			map.on('mouseenter', 'market-cell-fill', () => {
+				if (onContainerPressRef.current) map.getCanvas().style.cursor = 'pointer'
+			})
+			map.on('mouseleave', 'market-cell-fill', () => {
+				map.getCanvas().style.cursor = ''
+			})
+
 			map.addSource('market-labels', { type: 'geojson', data: geoRef.current.labels })
 			map.addLayer({
 				id: 'market-label',
@@ -204,7 +244,7 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 				source: 'market-entrances',
 				paint: {
 					'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, 4, 19, 9],
-					'circle-color': c.brand,
+					'circle-color': c.ink,
 					'circle-stroke-color': fixed.white,
 					'circle-stroke-width': 2,
 				},
@@ -241,6 +281,21 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 				})
 			}
 
+			// метка нужного контейнера — поверх маршрута
+			layers
+				.filter((layer) => layer.source === 'market-target')
+				.forEach((layer) => map.addLayer(layer as maplibregl.LayerSpecification))
+			// метка цели «дышит» — её сразу видно среди сотен клеток
+			const halo = () => cellLayers(c, pulseAt(performance.now())).find((layer) => layer.id === 'market-target-halo')!
+			const tick = () => {
+				if (!map.getLayer('market-target-halo')) return
+				const { paint } = halo()
+				map.setPaintProperty('market-target-halo', 'circle-radius', paint['circle-radius'])
+				map.setPaintProperty('market-target-halo', 'circle-opacity', paint['circle-opacity'])
+				pulseFrame.current = requestAnimationFrame(tick)
+			}
+			pulseFrame.current = requestAnimationFrame(tick)
+
 			if (showUser && 'geolocation' in navigator) {
 				const marker = new maplibregl.Marker({ color: c.brand })
 				userMarkerRef.current = marker
@@ -253,6 +308,7 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 		})
 
 		return () => {
+			if (pulseFrame.current !== null) cancelAnimationFrame(pulseFrame.current)
 			if (geoWatchId.current !== null) navigator.geolocation.clearWatch(geoWatchId.current)
 			userMarkerRef.current?.remove()
 			map?.remove()

@@ -122,16 +122,21 @@ export function useMarketScheme() {
 		queryFn: fetchScheme,
 		initialData: bundledScheme,
 		initialDataUpdatedAt: 0,
-		staleTime: 60 * 60_000,
+		// магазины в контейнерах меняются — схему перепроверяем раз в 5 минут (ETag: без изменений — 304)
+		staleTime: 5 * 60_000,
 	})
 }
 
 /** GeoJSON of the market with highlighted rows — for MarketMapLive. */
-export function useMarketGeo(highlightedRowIds: number[] = []) {
+export function useMarketGeo(highlightedRowIds: number[] = [], targetContainerId?: number, highlightedContainerIds: number[] = []) {
 	const scheme = useMarketScheme().data
 	const key = highlightedRowIds.join(',')
-	// eslint-disable-next-line react-hooks/exhaustive-deps -- ids compared by value
-	return useMemo(() => buildMarketGeo(scheme, highlightedRowIds), [scheme, key])
+	const cellsKey = highlightedContainerIds.join(',')
+	return useMemo(
+		() => buildMarketGeo(scheme, highlightedRowIds, targetContainerId, highlightedContainerIds),
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- ids compared by value
+		[scheme, key, targetContainerId, cellsKey],
+	)
 }
 
 /**
@@ -149,11 +154,14 @@ export function useMapHighlight(kind: 'BRAND' | 'CATEGORY', id: number | undefin
 }
 
 /** Route to a box [18]: polyline over the passages, minutes, metres and steps. */
-export function useRoute(toContainerId: number) {
+/** Маршрут до бокса. from — GPS покупателя: на рынке путь идёт от него, вне рынка сервер ведёт от входа. */
+export function useRoute(toContainerId: number, from?: { lat: number; lon: number } | null) {
+	const query = from ? { toContainerId, fromLat: from.lat, fromLon: from.lon } : { toContainerId }
 	return useQuery({
-		queryKey: marketKeys.route({ toContainerId }),
-		queryFn: ({ signal }) => apiFetch<MarketRoute>('/market/route', { query: { toContainerId }, auth: false, signal }),
+		queryKey: marketKeys.route(query),
+		queryFn: ({ signal }) => apiFetch<MarketRoute>('/market/route', { query, auth: false, signal }),
 		enabled: toContainerId > 0,
+		placeholderData: keepPreviousData,
 	})
 }
 

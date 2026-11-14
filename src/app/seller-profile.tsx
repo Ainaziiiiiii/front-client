@@ -363,7 +363,7 @@ export default function SellerProfileForBuyerScreen() {
 					paddingBottom: insets.bottom + 12,
 					borderTopWidth: 1,
 					borderTopColor: c.hairline,
-					backgroundColor: c.card,
+					backgroundColor: c.surface,
 					flexDirection: 'row',
 					gap: 8,
 				}}

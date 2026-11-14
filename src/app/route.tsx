@@ -1,41 +1,80 @@
-import { useEffect, useRef } from 'react'
-import { Linking, Text, View } from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import * as Location from 'expo-location'
+import { Linking, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { MarketMapLive, type MarketMapLiveHandle } from '@/components/market-map-live'
 import { PlacePlate, QueryErrorBanner, ScreenHeader } from '@/components/ui'
 import { LinearGradient } from 'expo-linear-gradient'
-import { BigButton, BubbleIcon, CallIcon } from '@/components/buyer-v23'
+import { BigButton, BubbleIcon, CallIcon, ChevronIcon, RouteIcon } from '@/components/buyer-v23'
+import { LocateIcon } from '@/components/icons'
 import { schemaToGeo } from '@/lib/geo'
-import { fixed, fontFamily, fs, raw, useColors } from '@/theme'
+import { fixed, fontFamily, fs, LightTheme, raw, useColors } from '@/theme'
+import { StatusBar } from 'expo-status-bar'
 import { formatPlace } from '@/lib/format'
 import { useRoute } from '@/api/market'
+import { currentCoords } from '@/lib/locate'
 import { t } from '@/i18n'
 
+/** Карта всегда светлая — и экран вокруг неё тоже, даже в тёмной теме телефона. */
 export default function RouteScreen() {
+	return (
+		<LightTheme>
+			<StatusBar style="dark" />
+			<RouteScreenContent />
+		</LightTheme>
+	)
+}
+
+function RouteScreenContent() {
 	const c = useColors()
 	const insets = useSafeAreaInsets()
 	const params = useLocalSearchParams<{ containerId: string; shopName?: string; chatId?: string; phone?: string }>()
 	const chatId = Number(params.chatId) || 0
-	const route = useRoute(Number(params.containerId) || 0)
+	const here = useHere()
+	const route = useRoute(Number(params.containerId) || 0, here)
 	const mapRef = useRef<MarketMapLiveHandle>(null)
 	const data = route.data
 	const polyline = data?.polyline
 
-	/** Открываем на середине маршрута, чтобы путь от входа до бокса был виден целиком. */
-	useEffect(() => {
+	const [sheetHeight, setSheetHeight] = useState(0)
+	const [stepsOpen, setStepsOpen] = useState(false)
+	const containerPoint = data?.containerPoint
+
+	/** Весь путь от старта до контейнера — над шторкой, под заголовком. */
+	const showWholeRoute = useCallback(() => {
 		if (!polyline?.length) return
-		const xs = polyline.map(([x]) => x)
-		const ys = polyline.map(([, y]) => y)
-		const mid = schemaToGeo((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2)
-		mapRef.current?.focusOn(mid, 16.6)
-	}, [polyline])
+		const points = [...polyline, ...(containerPoint ? [containerPoint] : [])].map(([x, y]) => schemaToGeo(x, y))
+		mapRef.current?.fitTo(points, { top: insets.top + 80, bottom: sheetHeight + 24, left: 48, right: 48 })
+	}, [polyline, containerPoint, insets.top, sheetHeight])
+
+	useEffect(() => {
+		if (sheetHeight > 0) showWholeRoute()
+	}, [showWholeRoute, sheetHeight])
 
 	const minutes = data ? Math.max(1, data.minutes) : null
 
 	return (
 		<View style={{ flex: 1, backgroundColor: raw.mapSurface }}>
-			<MarketMapLive ref={mapRef} route={data?.polyline} highlightedRowIds={data ? [data.target.rowId] : undefined} />
+			<MarketMapLive
+				ref={mapRef}
+				route={data?.polyline}
+				highlightedRowIds={data ? [data.target.rowId] : undefined}
+				targetContainerId={Number(params.containerId) || undefined}
+				onContainerPress={(_, shopId) => shopId && router.push({ pathname: '/seller-profile', params: { id: String(shopId) } })}
+			/>
+
+			{/* «Где я» и «Весь путь» — над шторкой справа */}
+			{sheetHeight > 0 ? (
+				<View style={{ position: 'absolute', right: 14, bottom: sheetHeight + 14, gap: 10 }}>
+					<MapRoundButton label={t('Где я')} onPress={() => mapRef.current?.focusOnMe(18.5)}>
+						<LocateIcon size={22} color={c.ink} />
+					</MapRoundButton>
+					<MapRoundButton label={t('Весь путь')} onPress={showWholeRoute}>
+						<RouteIcon size={22} color={c.ink} />
+					</MapRoundButton>
+				</View>
+			) : null}
 
 			<LinearGradient
 				colors={[c.surface, c.surface, c.surfaceClear]}
@@ -48,6 +87,7 @@ export default function RouteScreen() {
 			</View>
 
 			<View
+				onLayout={(event) => setSheetHeight(Math.round(event.nativeEvent.layout.height))}
 				style={{
 					position: 'absolute',
 					left: 0,
@@ -79,13 +119,29 @@ export default function RouteScreen() {
 								{params.shopName ?? formatPlace(data.target)}
 							</Text>
 							<Text style={{ fontSize: fs.md, fontFamily: fontFamily(400), color: c.muted }}>
-								{t('≈ {0} мин пешком', minutes)}{data.fromSource === 'ENTRANCE' ? t(' от входа') : ''}
+								{t('≈ {0} мин пешком', minutes)}{data.fromSource === 'ENTRANCE' ? t(' от входа') : data.fromSource === 'GPS' ? t(' от вас') : ''}
 							</Text>
 						</View>
 					</View>
 				) : null}
 
-				{(data?.steps ?? []).map((step, i) => (
+				{/* шаги свёрнуты — карта видна; первый шаг всегда на виду */}
+				{data?.steps?.length ? (
+					<Pressable
+						onPress={() => setStepsOpen((open) => !open)}
+						hitSlop={6}
+						style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}
+					>
+						<Text style={{ fontSize: fs.md, fontFamily: fontFamily(700), color: c.brandStrong }}>
+							{stepsOpen ? t('Свернуть шаги') : t('Все шаги ({0})', data.steps.length)}
+						</Text>
+						<View style={{ transform: [{ rotate: stepsOpen ? '-90deg' : '90deg' }] }}>
+							<ChevronIcon size={16} color={c.brandStrong} />
+						</View>
+					</Pressable>
+				) : null}
+
+				{(stepsOpen ? data?.steps ?? [] : (data?.steps ?? []).slice(0, 1)).map((step, i) => (
 					<View key={step.n} style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
 						<View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c.brandTint, alignItems: 'center', justifyContent: 'center' }}>
 							<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(800), color: c.brandStrong }}>{i + 1}</Text>
@@ -119,3 +175,50 @@ export default function RouteScreen() {
 }
 
 /** «РЯД 14» / «КОНТ. 12» — blue boxes in the sheet [06]. */
+
+/**
+ * Где покупатель: спрашиваем геолокацию один раз. Пока ответа нет, отказ или ошибка — маршрут от входа;
+ * сервер сам решает, на рынке ли точка (вне рынка — тоже от входа).
+ */
+function useHere() {
+	const [here, setHere] = useState<{ lat: number; lon: number } | null>(null)
+	useEffect(() => {
+		let alive = true
+		;(async () => {
+			const { status } = await Location.requestForegroundPermissionsAsync()
+			if (status !== 'granted') return
+			const coords = await currentCoords()
+			if (alive) setHere({ lat: coords.latitude, lon: coords.longitude })
+		})().catch(() => {})
+		return () => {
+			alive = false
+		}
+	}, [])
+	return here
+}
+
+/** Круглая кнопка на карте: «Где я», «Весь путь». */
+function MapRoundButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
+	const c = useColors()
+	return (
+		<Pressable
+			accessibilityLabel={label}
+			onPress={onPress}
+			style={{
+				width: 48,
+				height: 48,
+				borderRadius: 24,
+				backgroundColor: c.card,
+				alignItems: 'center',
+				justifyContent: 'center',
+				shadowColor: fixed.shadow,
+				shadowOpacity: 0.16,
+				shadowOffset: { width: 0, height: 4 },
+				shadowRadius: 10,
+				elevation: 5,
+			}}
+		>
+			{children}
+		</Pressable>
+	)
+}

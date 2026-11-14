@@ -138,7 +138,7 @@ export default function BuyerHomeScreen() {
 					</LinearGradient>
 				</Pressable>
 
-				<Caps>{t('Нужен мастер?')}</Caps>
+				<Caps large>{t('Нужен мастер?')}</Caps>
 				<View style={{ flexDirection: 'row', gap: 8 }}>
 					{HOME_SERVICES.map(({ code, label, icon: Icon }) => (
 						<ServiceTile
@@ -168,7 +168,7 @@ export default function BuyerHomeScreen() {
 				{items.length ? (
 					<>
 						<View style={{ height: 2 }} />
-						<Caps link={t('Все')} onLink={() => router.push('/my-requests')}>{t('Мои запросы')}</Caps>
+						<Caps large link={t('Все')} onLink={() => router.push('/my-requests')}>{t('Мои запросы')}</Caps>
 					</>
 				) : null}
 				<QueryErrorBanner
@@ -217,24 +217,23 @@ function ParcelRow({ order }: { order: DeliveryOrder }) {
 
 function ServiceTile({ label, icon, muted, onPress }: { label: string; icon: ReactNode; muted?: boolean; onPress: () => void }) {
 	const c = useColors()
+	// Mashina.kg style: grey tile, icon top-left, label bottom-left (up to two lines).
 	return (
 		<Pressable
 			onPress={onPress}
 			style={{
 				flex: 1,
-				height: 84,
-				borderRadius: 16,
+				height: 96,
+				borderRadius: 18,
 				backgroundColor: c.card,
-				alignItems: 'center',
-				justifyContent: 'center',
-				gap: 7,
-				paddingHorizontal: 4,
+				justifyContent: 'space-between',
+				padding: 10,
 			}}
 		>
 			<View
 				style={{
-					width: 38,
-					height: 38,
+					width: 40,
+					height: 40,
 					borderRadius: 12,
 					backgroundColor: muted ? c.surface : c.brandTint,
 					alignItems: 'center',
@@ -243,7 +242,7 @@ function ServiceTile({ label, icon, muted, onPress }: { label: string; icon: Rea
 			>
 				{icon}
 			</View>
-			<Text numberOfLines={1} style={{ fontSize: fs.sm, lineHeight: 16, fontFamily: fontFamily(600), color: c.ink, textAlign: 'center' }}>
+			<Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontSize: fs.sm, lineHeight: 17, fontFamily: fontFamily(500), color: c.ink }}>
 				{label}
 			</Text>
 		</Pressable>

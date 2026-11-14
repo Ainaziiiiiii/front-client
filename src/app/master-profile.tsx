@@ -279,7 +279,7 @@ function MasterProfileForm({ initial, error }: { initial: MyMaster | null; error
 				{initial ? <MasterMedia master={initial} /> : null}
 			</ScrollView>
 
-			<View style={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 28 + insets.bottom, backgroundColor: c.card, borderTopWidth: 1, borderTopColor: c.hairline }}>
+			<View style={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 28 + insets.bottom, backgroundColor: c.surface, borderTopWidth: 1, borderTopColor: c.hairline }}>
 				<Button
 					label={t('Сохранить')}
 					height={56}

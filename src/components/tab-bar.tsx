@@ -7,7 +7,7 @@ import type { IconProps } from '@/components/icons'
 /**
  * Нижнее меню из макета: контент 72px + верхняя граница 2px + отступ 8px сверху. Отступ под системные кнопки
  * (home indicator iPhone, «назад / домой» Android) добавляется к высоте, а не съедает её.
- * Активная вкладка — капсула 56×30 на brand-tint, иконка и подпись brand-strong weight 700.
+ * Как в Mashina.kg: белое меню без рамки; активная вкладка — чёрная иконка и подпись weight 700, остальные серо-голубые.
  */
 export function TabBarContainer({ children }: { children: React.ReactNode }) {
 	const c = useColors()
@@ -19,9 +19,7 @@ export function TabBarContainer({ children }: { children: React.ReactNode }) {
 				paddingTop: 8,
 				paddingHorizontal: 4,
 				paddingBottom: insets.bottom,
-				borderTopWidth: 2,
-				borderTopColor: c.hairline,
-				backgroundColor: c.card,
+				backgroundColor: c.surface,
 				flexDirection: 'row',
 			}}
 		>
@@ -42,7 +40,7 @@ export const TabButton = forwardRef(function TabButton(
 	ref: Ref<HostInstance>,
 ) {
 	const c = useColors()
-	const color = isFocused ? c.brandStrong : c.muted
+	const color = isFocused ? c.ink : c.fillInk
 
 	return (
 		<Pressable ref={ref} {...props} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
@@ -53,7 +51,6 @@ export const TabButton = forwardRef(function TabButton(
 					borderRadius: 15,
 					alignItems: 'center',
 					justifyContent: 'center',
-					backgroundColor: isFocused ? c.brandTint : 'transparent',
 				}}
 			>
 				<Icon size={24} color={color} strokeWidth={isFocused ? 2.2 : 1.9} />
@@ -69,7 +66,7 @@ export const TabButton = forwardRef(function TabButton(
 							borderRadius: 9,
 							backgroundColor: c.danger,
 							borderWidth: 2,
-							borderColor: c.card,
+							borderColor: c.surface,
 							alignItems: 'center',
 							justifyContent: 'center',
 						}}

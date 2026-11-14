@@ -167,7 +167,7 @@ export default function SellerBrandsScreen() {
 					paddingBottom: insets.bottom + 12,
 					borderTopWidth: 1,
 					borderTopColor: c.hairline,
-					backgroundColor: c.card,
+					backgroundColor: c.surface,
 				}}
 			>
 				<Pressable
