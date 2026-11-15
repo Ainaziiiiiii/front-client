@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
 import { QueryErrorBanner, ScreenHeader, toast } from '@/components/ui'
 import { BrandLogo } from '@/components/ui/brand'
 import { CheckIcon, SearchIcon } from '@/components/icons'
 import { fixed, fontFamily, fs, sectionTitle, useColors } from '@/theme'
 import { plural } from '@/lib/format'
-import { useBrands } from '@/api/directory'
-import { useMyShop, useSetShopBrands } from '@/api/shop'
+import { useBrands, useCategories } from '@/api/directory'
+import { useMyShop, useSetShopBrands, useSetShopCategories } from '@/api/shop'
+import { CategoryChips } from '@/components/category-chips'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 /** 23 «Марки, которые продаю» — requests come only for these brands. */
 export default function SellerBrandsScreen() {
@@ -24,6 +25,24 @@ export default function SellerBrandsScreen() {
 	const selected = picked ?? shop.data?.brands.map((b) => b.id) ?? []
 
 	const toggle = (id: number) => setPicked(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])
+
+	// что продаёт: ходовая, оптика… — по марке и категории покупатель ищет на карте
+	const categories = useCategories()
+	const saveCategories = useSetShopCategories()
+	const [pickedCategories, setPickedCategories] = useState<number[] | null>(null)
+	const selectedCategories = pickedCategories ?? shop.data?.categories.map((category) => category.id) ?? []
+	const toggleCategory = (id: number) =>
+		setPickedCategories(selectedCategories.includes(id) ? selectedCategories.filter((x) => x !== id) : [...selectedCategories, id])
+	const saving = save.isPending || saveCategories.isPending
+	const submit = () =>
+		save.mutate(selected, {
+			onSuccess: () => {
+				const done = () => (toast(t('Сохранено')), goBack())
+				// категории — только если меняли (пустой список сервер не примет)
+				if (pickedCategories && pickedCategories.length) saveCategories.mutate(pickedCategories, { onSuccess: done })
+				else done()
+			},
+		})
 
 	const searching = q.trim().length > 0
 	const popularBrands = searching ? [] : (all.data ?? []).filter((b) => b.popular)
@@ -57,7 +76,15 @@ export default function SellerBrandsScreen() {
 					/>
 				</View>
 
-				<QueryErrorBanner error={shop.error ?? all.error ?? save.error} onRetry={() => all.refetch()} />
+				<QueryErrorBanner error={shop.error ?? all.error ?? save.error ?? saveCategories.error ?? categories.error} onRetry={() => all.refetch()} />
+
+				{!searching && categories.data?.length ? (
+					<View style={{ gap: 8, paddingBottom: 4 }}>
+						<Text style={{ ...sectionTitle, color: c.inkSecondary }}>{t('Что продаёте')}</Text>
+						<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(500), color: c.muted }}>{t('Можно несколько — по ним вас найдут на карте')}</Text>
+						<CategoryChips categories={categories.data} picked={selectedCategories} onToggle={toggleCategory} />
+					</View>
+				) : null}
 
 
 				<View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -171,8 +198,8 @@ export default function SellerBrandsScreen() {
 				}}
 			>
 				<Pressable
-					disabled={selected.length === 0 || save.isPending}
-					onPress={() => save.mutate(selected, { onSuccess: () => (toast(t('Марки сохранены')), router.back()) })}
+					disabled={selected.length === 0 || saving}
+					onPress={submit}
 					style={{
 						height: 56,
 						borderRadius: 14,
@@ -182,7 +209,7 @@ export default function SellerBrandsScreen() {
 						opacity: selected.length === 0 ? 0.4 : 1,
 					}}
 				>
-					{save.isPending ? (
+					{saving ? (
 						<ActivityIndicator color={fixed.white} />
 					) : (
 						<Text style={{ fontSize: fs.xl, fontFamily: fontFamily(700), color: fixed.white }}>

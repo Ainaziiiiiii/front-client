@@ -18,6 +18,7 @@ import type { PartVideoUpload } from '@/api/types'
 import { t } from '@/i18n'
 import { usePartDraft } from '@/store/usePartDraft'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 const MAX_SEC = 30
 
@@ -115,7 +116,7 @@ export default function SellerVideoScreen() {
 			draftId.current = part.id
 			await publish.mutateAsync(part.id)
 			toast(t('Видео в ленте'))
-			leave(() => router.back())
+			leave(() => goBack())
 		} catch {
 			// shown by the error banner (save.error / publish.error)
 		}

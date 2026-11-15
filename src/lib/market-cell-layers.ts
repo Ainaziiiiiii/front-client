@@ -1,18 +1,35 @@
-// Слои контейнеров на карте рынка — общие для веба (maplibre-gl) и телефона (maplibre-react-native).
+// Слои рынка поверх подложки — общие для веба (maplibre-gl) и телефона (maplibre-react-native), в палитре из lib/map-palette.
+// Порядок списка = порядок отрисовки, слои идут подряд по источникам (на телефоне они вложены в свой GeoJSONSource).
+//
+// Что делает карту живой:
+//  • рынок светится по контуру, как фонарь; проходы — золотые дорожки;
+//  • у контейнеров мягкая тень на земле и чуть разная высота — «город» из коробок, а не сетка;
+//  • продавцы из приложения — светло-голубые коробки с синей обводкой;
+//  • нужный контейнер — сплошная синяя коробка с номером на синей плашке;
+//  • маршрут — синий, голубой, к цели густеет до фирменного синего, по нему бегут огоньки.
 // Ячейки появляются при приближении, номера — ещё ближе, названия магазинов — у самого ряда.
-// Нужный контейнер (target) виден всегда: жёлтая метка с номером поверх всего —
-// жёлтый в приложении всегда значит «идти сюда» (fixed.plate, как табличка места).
-import { fixed, raw } from '@/theme'
-
-type Colors = { brand: string; brandTint: string; brandStrong: string; ink: string }
+import { mapPalette, type MapPalette } from '@/lib/map-palette'
 
 /** style-spec выражения: важен валидный JSON (см. Expr в market-map-maplibre). */
 type Expr = any
 
+export type MarketSourceId =
+	| 'market-boundary'
+	| 'market-passages'
+	| 'market-blocks'
+	| 'market-cells'
+	| 'market-cell-labels'
+	| 'market-labels'
+	| 'market-entrances'
+	| 'market-route'
+	| 'market-route-flow'
+	| 'market-target'
+	| 'market-target-label'
+
 export interface CellLayer {
 	id: string
-	source: 'market-cells' | 'market-cell-labels' | 'market-target'
-	type: 'fill' | 'line' | 'symbol' | 'circle'
+	source: MarketSourceId
+	type: 'fill' | 'fill-extrusion' | 'line' | 'symbol' | 'circle'
 	minzoom?: number
 	maxzoom?: number
 	filter?: Expr
@@ -21,53 +38,226 @@ export interface CellLayer {
 }
 
 /** С какого зума видны ячейки, номера и названия магазинов. */
-export const CELL_ZOOM = 16.8
+export const CELL_ZOOM = 16.4
 export const NUMBER_ZOOM = 18.2
 export const SHOP_ZOOM = 19.2
 
+/** Слои, которые веб анимирует покадрово (на телефоне они стоят на месте). */
+export const ANIMATED = {
+	entrancePulse: 'market-entrance-pulse',
+	routeFlow: 'market-route-flow',
+} as const
+
 const isTarget: Expr = ['==', ['get', 'target'], true]
 const isShop: Expr = ['==', ['get', 'shop'], true]
-/** Подсвечен фильтром («где продают Toyota»). */
+/** Выбран другой контейнер — этот гаснет (прожектор на выбранном). */
+const isDim: Expr = ['==', ['get', 'dim'], true]
 const isHl: Expr = ['==', ['get', 'hl'], true]
+const isMuted: Expr = ['==', ['get', 'muted'], true]
+const kindIs = (kind: string): Expr => ['==', ['get', 'kind'], kind]
+const isShopBlock: Expr = ['in', ['get', 'kind'], ['literal', ['shop', 'anon']]]
 
-/**
- * pulseScale — «дыхание» метки цели: 1…1.6 (анимация на карте), без анимации — 1.
- */
-export function cellLayers(c: Colors, pulseScale = 1): CellLayer[] {
+const zoomed = (stops: number[]): Expr => ['interpolate', ['exponential', 1.5], ['zoom'], ...stops]
+
+export function marketLayers(p: MapPalette = mapPalette): CellLayer[] {
 	return [
+		// ── участок рынка: тёплое пятно, светящийся контур, тонкий пунктир по краю
 		{
-			id: 'market-cell-fill',
+			id: 'market-boundary-fill',
+			source: 'market-boundary',
+			type: 'fill',
+			paint: { 'fill-color': p.plot, 'fill-opacity': 1 },
+		},
+		{
+			id: 'market-boundary-glow',
+			source: 'market-boundary',
+			type: 'line',
+			layout: { 'line-join': 'round' },
+			paint: {
+				'line-color': p.plotGlow,
+				'line-width': zoomed([14, 10, 17, 34, 19, 70]),
+				'line-blur': zoomed([14, 10, 17, 30, 19, 60]),
+				'line-opacity': 0.32,
+			},
+		},
+		{
+			id: 'market-boundary-line',
+			source: 'market-boundary',
+			type: 'line',
+			layout: { 'line-join': 'round' },
+			paint: {
+				'line-color': p.plotEdge,
+				'line-width': zoomed([14, 1.2, 17, 2.4, 19, 3.5]),
+				'line-dasharray': [2, 1.6],
+				'line-opacity': 0.9,
+			},
+		},
+
+		// ── проходы: золотые дорожки с мягким сиянием
+		{
+			id: 'market-passage-glow',
+			source: 'market-passages',
+			type: 'line',
+			layout: { 'line-cap': 'round', 'line-join': 'round' },
+			paint: {
+				'line-color': p.passageGlow,
+				'line-width': zoomed([15, 10, 18, 34, 20, 70]),
+				'line-blur': zoomed([15, 8, 18, 26, 20, 56]),
+				'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 0.28, 19, 0.12],
+			},
+		},
+		{
+			id: 'market-passage-casing',
+			source: 'market-passages',
+			type: 'line',
+			layout: { 'line-cap': 'round', 'line-join': 'round' },
+			paint: {
+				'line-color': p.passageEdge,
+				'line-width': zoomed([15, 4, 18, 14, 20, 34]),
+				'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 1, 19, 0.5],
+			},
+		},
+		{
+			id: 'market-passage-fill',
+			source: 'market-passages',
+			type: 'line',
+			layout: { 'line-cap': 'round', 'line-join': 'round' },
+			paint: {
+				'line-color': p.passage,
+				'line-width': zoomed([15, 2.5, 18, 11, 20, 29]),
+				// близко проход — фон для контейнеров, а не главное на экране
+				'line-opacity': ['interpolate', ['linear'], ['zoom'], 17.2, 1, 19, 0.7],
+			},
+		},
+
+		// ── ряды и прочие блоки: на обзоре — плашки, ближе растворяются, уступая контейнерам
+		{
+			id: 'market-block-fill',
+			source: 'market-blocks',
+			type: 'fill',
+			paint: {
+				'fill-opacity': ['interpolate', ['linear'], ['zoom'], 16.6, 1, 17.6, 0.4],
+				'fill-color': [
+					'case',
+					isShopBlock,
+					p.shopBlock,
+					kindIs('admin'),
+					p.admin,
+					kindIs('stall'),
+					p.stall,
+					isHl,
+					p.rowHl,
+					isMuted,
+					p.rowMuted,
+					p.row,
+				],
+			},
+		},
+		{
+			id: 'market-block-line',
+			source: 'market-blocks',
+			type: 'line',
+			paint: {
+				'line-color': ['case', isShopBlock, p.shopBlockEdge, kindIs('admin'), p.adminEdge, isHl, p.rowHlEdge, isMuted, p.rowMutedEdge, p.rowEdge],
+				'line-opacity': ['interpolate', ['linear'], ['zoom'], 16.6, 1, 17.6, 0.35],
+				'line-width': ['case', isHl, 2, 1],
+			},
+		},
+
+		// ── контейнеры
+		{
+			// тень на земле, сдвинутая от солнца — коробки «стоят», а не нарисованы
+			id: 'market-cell-shadow',
 			source: 'market-cells',
 			type: 'fill',
 			minzoom: CELL_ZOOM,
+			filter: ['!', isTarget],
 			paint: {
-				'fill-color': ['case', isTarget, fixed.plate, isHl, c.brand, isShop, c.brandTint, fixed.white],
-				'fill-opacity': ['interpolate', ['linear'], ['zoom'], CELL_ZOOM, 0, CELL_ZOOM + 0.5, 1],
+				'fill-color': p.cellShadow,
+				'fill-opacity': ['interpolate', ['linear'], ['zoom'], CELL_ZOOM, 0, CELL_ZOOM + 0.8, 1],
+				'fill-translate': ['interpolate', ['linear'], ['zoom'], CELL_ZOOM, ['literal', [0, 0]], 18, ['literal', [1.5, 2.5]], 19.6, ['literal', [4, 7]]],
+				'fill-translate-anchor': 'map',
 			},
 		},
 		{
-			id: 'market-cell-line',
+			// ореол вокруг продавцов из приложения
+			id: 'market-cell-shop-glow',
 			source: 'market-cells',
 			type: 'line',
 			minzoom: CELL_ZOOM,
+			filter: ['all', isShop, ['!', isTarget], ['!', isDim]],
+			layout: { 'line-join': 'round' },
 			paint: {
-				'line-color': ['case', isTarget, fixed.plateInk, isHl, c.brandStrong, isShop, c.brand, raw.mapRowBorder],
-				'line-width': ['case', isTarget, 2.5, isHl, 1.6, isShop, 1.4, 0.8],
-				'line-opacity': ['interpolate', ['linear'], ['zoom'], CELL_ZOOM, 0, CELL_ZOOM + 0.5, 1],
+				'line-color': p.cellShopGlow,
+				'line-width': zoomed([CELL_ZOOM, 2, 18, 8, 19.6, 18]),
+				'line-blur': zoomed([CELL_ZOOM, 2, 18, 7, 19.6, 16]),
+				'line-opacity': 0.35,
 			},
 		},
 		{
-			// контейнеры по фильтру видны и издалека — точками, пока ячеек ещё нет
+			// чёткая синяя обводка продавца — голубая коробка не теряется на белом
+			id: 'market-cell-shop-edge',
+			source: 'market-cells',
+			type: 'line',
+			minzoom: CELL_ZOOM,
+			filter: ['all', isShop, ['!', isTarget], ['!', isDim]],
+			layout: { 'line-join': 'round' },
+			paint: { 'line-color': p.cellShopGlow, 'line-width': zoomed([CELL_ZOOM, 0.8, 18, 1.6, 19.6, 2.4]) },
+		},
+		{
+			// невысокая коробка ~1,1 м, чуть разной высоты — номер (он на земле) остаётся почти на крыше;
+			// у продавца — голубая и чуть выше
+			id: 'market-cell-fill',
+			source: 'market-cells',
+			type: 'fill-extrusion',
+			minzoom: CELL_ZOOM,
+			filter: ['!', isTarget],
+			paint: {
+				// найденные фильтром — сплошной синий; продавцы — голубые; выбран другой — всё гаснет
+				'fill-extrusion-color': ['case', ['all', isDim, isShop], p.cellShopDim, isHl, p.cellHl, isShop, p.cellShop, isDim, p.cellDim, p.cell],
+				'fill-extrusion-height': [
+					'interpolate',
+					['linear'],
+					['zoom'],
+					CELL_ZOOM,
+					0,
+					CELL_ZOOM + 0.8,
+					['case', isShop, 1.55, ['+', 0.95, ['*', ['%', ['to-number', ['get', 'containerId'], 0], 5], 0.07]]],
+				],
+				'fill-extrusion-base': 0,
+				'fill-extrusion-opacity': 0.97,
+				'fill-extrusion-vertical-gradient': true,
+			},
+		},
+		{
+			// найденные фильтром горят: синее сияние на любом масштабе, вблизи — вокруг синей коробки
+			id: 'market-cell-hl-glow',
+			source: 'market-cell-labels',
+			type: 'circle',
+			filter: ['all', isHl, ['!', isTarget]],
+			paint: {
+				'circle-radius': zoomed([14, 7, CELL_ZOOM, 14, 18, 22, 19.6, 40]),
+				'circle-color': p.cellShopGlow,
+				'circle-blur': 1,
+				'circle-opacity': 0.5,
+				'circle-pitch-alignment': 'map',
+			},
+		},
+		{
+			// фильтр по марке на общем плане: коробок ещё нет — контейнеры с этой маркой горят точками, ближе становятся синими коробками
 			id: 'market-cell-hl-dot',
 			source: 'market-cell-labels',
 			type: 'circle',
-			maxzoom: CELL_ZOOM + 0.5,
+			maxzoom: CELL_ZOOM + 0.9,
 			filter: ['all', isHl, ['!', isTarget]],
 			paint: {
-				'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 4, CELL_ZOOM, 7],
-				'circle-color': c.brand,
-				'circle-stroke-color': fixed.white,
-				'circle-stroke-width': 2,
+				'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 2.5, CELL_ZOOM, 5],
+				'circle-color': p.cellShopGlow,
+				'circle-stroke-color': '#FFFFFF',
+				'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 14, 1, CELL_ZOOM, 1.8],
+				'circle-opacity': ['interpolate', ['linear'], ['zoom'], CELL_ZOOM, 1, CELL_ZOOM + 0.9, 0],
+				'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], CELL_ZOOM, 1, CELL_ZOOM + 0.9, 0],
+				'circle-pitch-alignment': 'map',
 			},
 		},
 		{
@@ -78,14 +268,14 @@ export function cellLayers(c: Colors, pulseScale = 1): CellLayer[] {
 			filter: ['!', isTarget],
 			layout: {
 				'text-field': ['get', 'number'],
-				'text-font': ['Noto Sans Regular'],
+				'text-font': ['case', isShop, ['literal', ['Noto Sans Bold']], ['literal', ['Noto Sans Regular']]],
 				'text-size': ['interpolate', ['linear'], ['zoom'], NUMBER_ZOOM, 9, 20, 14],
 				'text-allow-overlap': false,
 				'text-padding': 0,
 			},
 			paint: {
-				'text-color': ['case', isHl, fixed.white, isShop, c.brandStrong, c.ink],
-				'text-halo-color': ['case', isHl, c.brandStrong, fixed.white],
+				'text-color': ['case', isDim, p.cellTextDim, isHl, '#FFFFFF', isShop, p.shopText, p.cellText],
+				'text-halo-color': ['case', isDim, p.cellDim, isHl, p.cellHl, isShop, p.cellShop, p.cellTextHalo],
 				'text-halo-width': 1,
 			},
 		},
@@ -94,68 +284,134 @@ export function cellLayers(c: Colors, pulseScale = 1): CellLayer[] {
 			source: 'market-cell-labels',
 			type: 'symbol',
 			minzoom: SHOP_ZOOM,
-			filter: ['all', isShop, ['!', isTarget]],
+			filter: ['all', isShop, ['!', isTarget], ['!', isDim]],
 			layout: {
 				'text-field': ['get', 'shopName'],
-				'text-font': ['Noto Sans Regular'],
-				'text-size': 11,
-				'text-offset': [0, 1.3],
+				'text-font': ['Noto Sans Bold'],
+				'text-size': 11.5,
+				'text-offset': [0, 1.35],
 				'text-max-width': 7,
 				'text-optional': true,
 			},
-			paint: { 'text-color': c.brandStrong, 'text-halo-color': fixed.white, 'text-halo-width': 1.4 },
+			paint: { 'text-color': p.shopText, 'text-halo-color': p.shopTextHalo, 'text-halo-width': 1.6 },
 		},
+
+		// ── подписи рядов: жирные, разреженные, как таблички над рядами
 		{
-			id: 'market-target-halo',
-			source: 'market-target',
+			id: 'market-label',
+			source: 'market-labels',
+			type: 'symbol',
+			minzoom: 15.5,
+			layout: {
+				'text-field': ['get', 'label'],
+				'text-font': ['Noto Sans Bold'],
+				'text-size': ['interpolate', ['linear'], ['zoom'], 16, 10, 19, 15],
+				'text-transform': 'uppercase',
+				'text-letter-spacing': 0.08,
+				'text-allow-overlap': false,
+			},
+			paint: {
+				'text-color': ['case', isHl, p.labelHl, p.label],
+				'text-halo-color': p.labelHalo,
+				'text-halo-width': 1.6,
+				'text-halo-blur': 0.4,
+			},
+		},
+
+		// ── входы: точка и пульсирующее кольцо вокруг
+		{
+			id: 'market-entrance-pulse',
+			source: 'market-entrances',
 			type: 'circle',
 			paint: {
-				'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, 16 * pulseScale, 19, 34 * pulseScale],
-				'circle-color': fixed.plate,
-				'circle-opacity': 0.45 * (1.6 - pulseScale),
+				'circle-radius': zoomed([15, 9, 19, 20]),
+				'circle-color': 'rgba(0,0,0,0)',
+				'circle-stroke-color': p.entranceRing,
+				'circle-stroke-width': 2,
+				'circle-stroke-opacity': 0.5,
+				'circle-pitch-alignment': 'map',
 			},
 		},
 		{
-			id: 'market-target-pin',
-			source: 'market-target',
+			id: 'market-entrance-dot',
+			source: 'market-entrances',
 			type: 'circle',
 			paint: {
-				'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, 11, 19, 18],
-				'circle-color': fixed.plate,
-				'circle-stroke-color': fixed.plateInk,
-				'circle-stroke-width': 2.5,
+				'circle-radius': zoomed([15, 4, 19, 9]),
+				'circle-color': p.entrance,
+				'circle-stroke-color': '#FFFFFF',
+				'circle-stroke-width': 2,
+				'circle-pitch-alignment': 'map',
+			},
+		},
+		{
+			id: 'market-entrance-label',
+			source: 'market-entrances',
+			type: 'symbol',
+			minzoom: 16.5,
+			layout: {
+				'text-field': ['get', 'label'],
+				'text-font': ['Noto Sans Bold'],
+				'text-size': 11,
+				'text-offset': [0, 1.4],
+				'text-transform': 'uppercase',
+				'text-letter-spacing': 0.1,
+			},
+			paint: { 'text-color': p.entranceText, 'text-halo-color': p.labelHalo, 'text-halo-width': 1.6 },
+		},
+
+		// ── маршрут: сияние, линия синяя → жёлтая к цели (нужен lineMetrics), огоньки поверх
+		{
+			id: 'market-route-glow',
+			source: 'market-route',
+			type: 'line',
+			layout: { 'line-cap': 'round', 'line-join': 'round' },
+			paint: { 'line-color': p.routeGlow, 'line-opacity': 0.25, 'line-width': zoomed([15, 10, 19, 26]), 'line-blur': zoomed([15, 6, 19, 16]) },
+		},
+		{
+			id: 'market-route-line',
+			source: 'market-route',
+			type: 'line',
+			layout: { 'line-cap': 'round', 'line-join': 'round' },
+			paint: {
+				'line-width': zoomed([15, 4, 19, 9]),
+				'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, p.route, 0.7, p.route, 1, p.routeEnd],
+			},
+		},
+		{
+			id: 'market-route-flow',
+			source: 'market-route-flow',
+			type: 'line',
+			layout: { 'line-cap': 'round', 'line-join': 'round' },
+			paint: { 'line-color': p.routeFlow, 'line-width': zoomed([15, 1.6, 19, 3.5]), 'line-opacity': 0.9, 'line-dasharray': [0, 4, 3] },
+		},
+
+		// ── нужный контейнер: синяя коробка, белый номер на синей плашке
+		{
+			id: 'market-target-box',
+			source: 'market-target',
+			type: 'fill-extrusion',
+			paint: {
+				'fill-extrusion-color': p.target,
+				'fill-extrusion-height': 2.2,
+				'fill-extrusion-base': 0,
+				'fill-extrusion-opacity': 1,
+				'fill-extrusion-vertical-gradient': true,
 			},
 		},
 		{
 			id: 'market-target-number',
-			source: 'market-target',
+			source: 'market-target-label',
 			type: 'symbol',
 			layout: {
 				'text-field': ['get', 'number'],
-				'text-font': ['Noto Sans Regular'],
-				'text-size': ['interpolate', ['linear'], ['zoom'], 15, 11, 19, 16],
+				'text-font': ['Noto Sans Bold'],
+				'text-size': ['interpolate', ['linear'], ['zoom'], 15, 14, 19, 21],
+				'text-offset': [0, -1.4],
 				'text-allow-overlap': true,
 				'text-ignore-placement': true,
 			},
-			paint: { 'text-color': fixed.plateInk },
-		},
-		{
-			id: 'market-target-caption',
-			source: 'market-target',
-			type: 'symbol',
-			layout: {
-				'text-field': ['get', 'caption'],
-				'text-font': ['Noto Sans Regular'],
-				'text-size': 13,
-				'text-offset': [0, 2.2],
-				'text-allow-overlap': true,
-			},
-			paint: { 'text-color': fixed.plateInk, 'text-halo-color': fixed.plate, 'text-halo-width': 3 },
+			paint: { 'text-color': '#FFFFFF', 'text-halo-color': p.target, 'text-halo-width': 5 },
 		},
 	]
-}
-
-/** Пульс метки цели: масштаб 1…1.6 по синусу, период ~1,6 с. */
-export function pulseAt(ms: number) {
-	return 1 + 0.3 * (1 + Math.sin((ms / 1600) * Math.PI * 2))
 }

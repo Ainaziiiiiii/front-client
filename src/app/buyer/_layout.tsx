@@ -13,7 +13,7 @@ export default function BuyerLayout() {
 
 	return (
 		<Tabs>
-			<TabSlot />
+			<TabSlot style={{ flex: 1 }} />
 
 			<TabBarContainer>
 				<TabTrigger name="home" asChild>

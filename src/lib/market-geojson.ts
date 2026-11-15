@@ -24,7 +24,8 @@ export interface MarketScheme {
 		code: string
 		label: string
 		type: string
-		geometry: { rect?: Rect; polygon?: number[][] }
+		/** parts — ряд с разрывом (проход, ворота): рисуется кусками, но остаётся одним рядом. */
+		geometry: { rect?: Rect; polygon?: number[][]; parts?: number[][][] }
 		/** Контейнеры с центром, углом оси ряда и длиной ячейки (есть только в схеме с сервера). */
 		containers?: SchemeContainer[]
 	}[]
@@ -115,8 +116,9 @@ export interface MarketGeo {
 	cells: FeatureCollection<Polygon>
 	/** Номера и названия магазинов в центрах ячеек — те же свойства. */
 	cellLabels: FeatureCollection<Point>
-	/** Нужный контейнер: точка для метки «вам сюда» (пусто, если не задан). */
-	target: FeatureCollection<Point>
+	/** Нужный контейнер: его коробка (3D, синяя) и точка для номера над ней (пусто, если не задан). */
+	target: FeatureCollection<Polygon>
+	targetLabel: FeatureCollection<Point>
 	center: [number, number]
 	/** [lon, lat] of a row's centre — to fly the camera there. */
 	rowCenter: (rowId: number) => [number, number] | null
@@ -133,14 +135,16 @@ export function buildMarketGeo(
 	const active = highlighted.size > 0
 	const kindOf = (type: string) => (type === 'VROW' ? 'vrow' : type === 'STALL' ? 'stall' : 'row')
 
-	const rowFeatures = scheme.rows.map((row) =>
-		polygon(ring(row.geometry), {
-			rowId: row.id,
-			label: mapLabel(row),
-			kind: kindOf(row.type),
-			hl: highlighted.has(row.id),
-			muted: active && !highlighted.has(row.id),
-		})
+	const rowFeatures = scheme.rows.flatMap((row) =>
+		(row.geometry.parts?.length ? row.geometry.parts : [ring(row.geometry)]).map((part) =>
+			polygon(part, {
+				rowId: row.id,
+				label: mapLabel(row),
+				kind: kindOf(row.type),
+				hl: highlighted.has(row.id),
+				muted: active && !highlighted.has(row.id),
+			})
+		)
 	)
 	const otherFeatures = scheme.blocks.map((block) => polygon(ring(block), { kind: block.kind, hl: false, muted: false }))
 
@@ -148,23 +152,32 @@ export function buildMarketGeo(
 
 	const cells: Feature<Polygon>[] = []
 	const cellLabels: Feature<Point>[] = []
-	const target: Feature<Point>[] = []
+	const target: Feature<Polygon>[] = []
+	const targetLabel: Feature<Point>[] = []
 	for (const row of scheme.rows) {
 		for (const cell of row.containers ?? []) {
 			const properties = {
 				containerId: cell.id,
 				number: String(cell.number),
-				shop: Boolean(cell.shop?.shopId),
+				// синий = продавец из приложения; при фильтре по марке — только те, кто её продаёт
+				shop: highlightedCells.size ? highlightedCells.has(cell.id) : Boolean(cell.shop?.shopId),
 				shopId: cell.shop?.shopId ?? 0,
-				shopName: cell.shop?.name ?? '',
+				// «Ряд 4, конт. 20» — название, которое повторяет место: на карте не подписываем
+				shopName: cell.shop?.name && !/конт|контейнер|^ряд\s/i.test(cell.shop.name) ? cell.shop.name : '',
 				target: cell.id === targetContainerId,
 				hl: highlightedCells.has(cell.id),
+				// прожектор: выбран контейнер — остальные гаснут
+				dim: targetContainerId != null && cell.id !== targetContainerId,
 				caption: row.type === 'STALL' ? t('{0} · конт. {1}', row.label, cell.number) : t('Ряд {0} · конт. {1}', row.code, cell.number),
 			}
-			cells.push(polygon(cellRing(cell), properties))
+			const box = polygon(cellRing(cell), properties)
+			cells.push(box)
 			const point: Feature<Point> = { type: 'Feature', properties, geometry: { type: 'Point', coordinates: toGeo([cell.x, cell.y]) } }
 			cellLabels.push(point)
-			if (properties.target) target.push(point)
+			if (properties.target) {
+				target.push(box)
+				targetLabel.push(point)
+			}
 		}
 	}
 
@@ -198,6 +211,7 @@ export function buildMarketGeo(
 		cells: { type: 'FeatureCollection', features: cells },
 		cellLabels: { type: 'FeatureCollection', features: cellLabels },
 		target: { type: 'FeatureCollection', features: target },
+		targetLabel: { type: 'FeatureCollection', features: targetLabel },
 		center: toGeo(centerOf(scheme.boundary)),
 		rowCenter: (rowId) => {
 			const center = centers.get(rowId)

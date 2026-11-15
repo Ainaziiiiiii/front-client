@@ -14,6 +14,7 @@ import { ORIGINS } from '@/store/useServiceDraft'
 import { ComplainLink, ComplaintSheet, type ComplaintTarget } from '@/components/complaint-sheet'
 import { t } from '@/i18n'
 import { requireSignIn } from '@/components/sign-in-prompt'
+import { goBack } from '@/lib/navigation'
 
 /** Filled rating stars — gold, the empty ones stay grey. */
 const STAR = fixed.star
@@ -60,7 +61,7 @@ export default function MasterCardScreen() {
 					{loading ? <Skeleton height="100%" radius={0} style={{ position: 'absolute' }} /> : null}
 					{cover ? <Image source={{ uri: resolveUrl(cover.url) }} style={{ position: 'absolute', inset: 0 }} contentFit="cover" /> : null}
 					<View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between' }}>
-						<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => router.back()} style={roundButton}>
+						<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => goBack()} style={roundButton}>
 							<ChevronLeftIcon size={24} color={c.ink} />
 						</Pressable>
 						{master ? (

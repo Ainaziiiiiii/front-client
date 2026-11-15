@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { BottomSheet, BrandLogo, Button, QueryErrorBanner, ScreenHeader, toast } from '@/components/ui'
 import { SearchIcon } from '@/components/icons'
 import { fontFamily, fs, sectionTitle, useColors } from '@/theme'
@@ -12,6 +12,7 @@ import { SelectField, SelectSheet } from '@/components/select-sheet'
 import { FUELS, ORIGINS } from '@/store/useServiceDraft'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 const VOLUMES = [1.3, 1.5, 1.8, 2.0, 2.4, 2.5, 3.0, 3.5, 4.0]
 
@@ -198,7 +199,7 @@ export default function GarageAddScreen() {
 								onPress={() => {
 									if (once) {
 										if (brand && model && year) useClientCar.getState().set({ brand, model, year })
-										router.back()
+										goBack()
 										return
 									}
 									return modelId &&
@@ -217,7 +218,7 @@ export default function GarageAddScreen() {
 											onSuccess: (car) => {
 												if (passport.select === '1') useClientCar.getState().select(car.id)
 												toast(t('Машина добавлена'))
-												router.back()
+												goBack()
 											},
 										}
 									)

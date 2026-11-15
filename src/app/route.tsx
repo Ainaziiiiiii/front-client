@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import * as Location from 'expo-location'
 import { Linking, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -13,7 +12,7 @@ import { fixed, fontFamily, fs, LightTheme, raw, useColors } from '@/theme'
 import { StatusBar } from 'expo-status-bar'
 import { formatPlace } from '@/lib/format'
 import { useRoute } from '@/api/market'
-import { currentCoords } from '@/lib/locate'
+import { useLiveLocation, useSteadyOrigin } from '@/lib/use-live-location'
 import { t } from '@/i18n'
 
 /** Карта всегда светлая — и экран вокруг неё тоже, даже в тёмной теме телефона. */
@@ -31,14 +30,15 @@ function RouteScreenContent() {
 	const insets = useSafeAreaInsets()
 	const params = useLocalSearchParams<{ containerId: string; shopName?: string; chatId?: string; phone?: string }>()
 	const chatId = Number(params.chatId) || 0
-	const here = useHere()
-	const route = useRoute(Number(params.containerId) || 0, here)
+	// геолокация вживую: маршрут пересчитывается, когда человек прошёл ~12 м (на рынке и на подходе к нему)
+	const live = useLiveLocation()
+	const origin = useSteadyOrigin(live)
+	const route = useRoute(Number(params.containerId) || 0, origin)
 	const mapRef = useRef<MarketMapLiveHandle>(null)
 	const data = route.data
 	const polyline = data?.polyline
 
 	const [sheetHeight, setSheetHeight] = useState(0)
-	const [stepsOpen, setStepsOpen] = useState(false)
 	const containerPoint = data?.containerPoint
 
 	/** Весь путь от старта до контейнера — над шторкой, под заголовком. */
@@ -48,11 +48,19 @@ function RouteScreenContent() {
 		mapRef.current?.fitTo(points, { top: insets.top + 80, bottom: sheetHeight + 24, left: 48, right: 48 })
 	}, [polyline, containerPoint, insets.top, sheetHeight])
 
+	// весь путь — один раз, когда он впервые построен; дальше маршрут обновляется на ходу, а камерой управляет человек
+	const framed = useRef(false)
 	useEffect(() => {
-		if (sheetHeight > 0) showWholeRoute()
-	}, [showWholeRoute, sheetHeight])
+		if (framed.current || !sheetHeight || !polyline?.length) return
+		framed.current = true
+		showWholeRoute()
+	}, [showWholeRoute, sheetHeight, polyline])
 
 	const minutes = data ? Math.max(1, data.minutes) : null
+	/** Единственная подсказка — про финал: по какую руку контейнер (последний шаг маршрута). */
+	const arrive = data?.steps?.at(-1)?.text ?? ''
+	const rightHand = /правую|оң жагыңызда/.test(arrive)
+	const leftHand = /левую|сол жагыңызда/.test(arrive)
 
 	return (
 		<View style={{ flex: 1, backgroundColor: raw.mapSurface }}>
@@ -119,36 +127,26 @@ function RouteScreenContent() {
 								{params.shopName ?? formatPlace(data.target)}
 							</Text>
 							<Text style={{ fontSize: fs.md, fontFamily: fontFamily(400), color: c.muted }}>
-								{t('≈ {0} мин пешком', minutes)}{data.fromSource === 'ENTRANCE' ? t(' от входа') : data.fromSource === 'GPS' ? t(' от вас') : ''}
+								{t('{0} мин · {1} м', minutes, data.distanceM)}
+								{data.fromSource === 'ENTRANCE' ? t(' от входа') : data.fromSource === 'GPS' ? t(' от вас') : ''}
 							</Text>
 						</View>
 					</View>
 				) : null}
 
-				{/* шаги свёрнуты — карта видна; первый шаг всегда на виду */}
-				{data?.steps?.length ? (
-					<Pressable
-						onPress={() => setStepsOpen((open) => !open)}
-						hitSlop={6}
-						style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}
-					>
-						<Text style={{ fontSize: fs.md, fontFamily: fontFamily(700), color: c.brandStrong }}>
-							{stepsOpen ? t('Свернуть шаги') : t('Все шаги ({0})', data.steps.length)}
+				{/* шагов нет: путь показывает линия на карте; подсказка только про финал */}
+				{data && (rightHand || leftHand) ? (
+					<View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, backgroundColor: c.surface }}>
+						<View style={{ transform: [{ rotate: rightHand ? '0deg' : '180deg' }] }}>
+							<ChevronIcon size={20} color={c.ink} />
+						</View>
+						<Text style={{ flex: 1, fontSize: fs.base, lineHeight: 21, fontFamily: fontFamily(600), color: c.ink }}>
+							{rightHand
+								? t('Контейнер {0} будет по правую руку', data.target.number)
+								: t('Контейнер {0} будет по левую руку', data.target.number)}
 						</Text>
-						<View style={{ transform: [{ rotate: stepsOpen ? '-90deg' : '90deg' }] }}>
-							<ChevronIcon size={16} color={c.brandStrong} />
-						</View>
-					</Pressable>
-				) : null}
-
-				{(stepsOpen ? data?.steps ?? [] : (data?.steps ?? []).slice(0, 1)).map((step, i) => (
-					<View key={step.n} style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-						<View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c.brandTint, alignItems: 'center', justifyContent: 'center' }}>
-							<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(800), color: c.brandStrong }}>{i + 1}</Text>
-						</View>
-						<Text style={{ flex: 1, fontSize: fs.base, lineHeight: 21.5, fontFamily: fontFamily(500), color: c.ink }}>{step.text}</Text>
 					</View>
-				))}
+				) : null}
 
 				<View style={{ flexDirection: 'row', gap: 10 }}>
 					<BigButton
@@ -175,27 +173,6 @@ function RouteScreenContent() {
 }
 
 /** «РЯД 14» / «КОНТ. 12» — blue boxes in the sheet [06]. */
-
-/**
- * Где покупатель: спрашиваем геолокацию один раз. Пока ответа нет, отказ или ошибка — маршрут от входа;
- * сервер сам решает, на рынке ли точка (вне рынка — тоже от входа).
- */
-function useHere() {
-	const [here, setHere] = useState<{ lat: number; lon: number } | null>(null)
-	useEffect(() => {
-		let alive = true
-		;(async () => {
-			const { status } = await Location.requestForegroundPermissionsAsync()
-			if (status !== 'granted') return
-			const coords = await currentCoords()
-			if (alive) setHere({ lat: coords.latitude, lon: coords.longitude })
-		})().catch(() => {})
-		return () => {
-			alive = false
-		}
-	}, [])
-	return here
-}
 
 /** Круглая кнопка на карте: «Где я», «Весь путь». */
 function MapRoundButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {

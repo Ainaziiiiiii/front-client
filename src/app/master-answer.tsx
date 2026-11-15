@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useConfirmLeave } from '@/lib/use-confirm-leave'
 import { toast } from '@/components/ui'
 import { VoicePlayer, VoiceRecordingPanel, VoiceResultPanel, useVoiceNote } from '@/components/voice'
@@ -12,6 +12,7 @@ import { formatClock, formatNumber } from '@/lib/format'
 import { useMasterOffer, useMasterRequest } from '@/api/services'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 type When = 'NOW' | 'TODAY' | 'TOMORROW'
 
@@ -64,7 +65,7 @@ export default function MasterAnswerScreen() {
 	const leave = useConfirmLeave(Boolean(price) || Boolean(voice.result) || voice.recording)
 	const close = () => {
 		if (voice.recording) voice.cancel()
-		router.back()
+		goBack()
 	}
 
 	const send = () => {
@@ -80,7 +81,7 @@ export default function MasterAnswerScreen() {
 					voiceMediaId: voice.result?.voice.id,
 				},
 			},
-			{ onSuccess: () => (toast(t('Ответ отправлен клиенту')), leave(() => router.back())) }
+			{ onSuccess: () => (toast(t('Ответ отправлен клиенту')), leave(() => goBack())) }
 		)
 	}
 

@@ -8,6 +8,7 @@ import { fontFamily, fs, useColors } from '@/theme'
 import { useChat } from '@/api/chats'
 import { openShopRoute } from '@/lib/shop-place'
 import { t } from '@/i18n'
+import { goBack } from '@/lib/navigation'
 
 /** 07 — buyer's chat with a shop, or with a master (then `shop = null`, `master` and `serviceRequest`); call in one tap. */
 export default function BuyerChatScreen() {
@@ -51,7 +52,7 @@ export default function BuyerChatScreen() {
 						borderBottomColor: c.hairline,
 					}}
 				>
-					<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => router.back()} hitSlop={10}>
+					<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => goBack()} hitSlop={10}>
 						<BackIcon color={c.ink} />
 					</Pressable>
 					{/* Avatar and name — the shop's profile (or the master's card). */}

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
-import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, ScreenHeader, Toggle, toast } from '@/components/ui'
 import { fixed, fontFamily, fs, sectionTitle, useColors } from '@/theme'
 import { WEEK, formatSchedule, hhmm, type WeekDay } from '@/lib/hours'
 import { useMyShop, useUpdateShop } from '@/api/shop'
 import { t } from '@/i18n'
+import { goBack } from '@/lib/navigation'
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 const pad = (h: number) => `${String(h).padStart(2, '0')}:00:00`
@@ -34,7 +34,7 @@ export default function ShopHoursScreen() {
 				openTo: allDay || to === 24 ? '23:59:00' : pad(to),
 				workDays: WEEK.map((item) => item.day).filter((day) => days.includes(day)),
 			},
-			{ onSuccess: () => (toast(t('Время работы сохранено')), router.back()) }
+			{ onSuccess: () => (toast(t('Время работы сохранено')), goBack()) }
 		)
 
 	const hourRow = (value: number, onPick: (h: number) => void, options: number[]) => (

@@ -1,4 +1,4 @@
-import { useRef, type ComponentType, type ReactNode } from 'react'
+import { useEffect, useRef, type ComponentType, type ReactNode } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View, type ScrollViewInstance } from 'react-native'
 import { Image } from '@/components/ui/image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -34,6 +34,7 @@ import type { DeliveryOrder } from '@/api/types'
 import { t } from '@/i18n'
 import { openSignIn, requireSignIn } from '@/components/sign-in-prompt'
 import { Greeting } from '@/components/greeting'
+import { useRoadsidePack } from '@/store/useRoadsidePack'
 
 /** «Нужен мастер?» [03]: three services → the one-screen request [16], «Все услуги» → choose there. */
 const HOME_SERVICES: { code: string; label: string; icon: ComponentType<{ size?: number; color: string; strokeWidth?: number }> }[] = [
@@ -65,6 +66,11 @@ export default function BuyerHomeScreen() {
 	const items = mergeRequests(flattenPages(requests.data), flattenPages(services.data))
 	const car = cars.data?.find((item) => item.isPrimary) ?? cars.data?.[0]
 	const name = me.data?.name
+	// Keep the roadside directory fresh while there is internet — it is what helps on a pass without it.
+	const syncRoadside = useRoadsidePack((s) => s.sync)
+	useEffect(() => {
+		if (signedIn) syncRoadside()
+	}, [signedIn, syncRoadside])
 
 	return (
 		<View style={{ flex: 1, backgroundColor: c.surface, paddingTop: insets.top }}>
@@ -155,6 +161,22 @@ export default function BuyerHomeScreen() {
 						onPress={() => requireSignIn(t('Чтобы позвать мастера, войдите по номеру телефона.')) && router.push('/service-new')}
 					/>
 				</View>
+
+				{/* Broke down on the road: the nearest tow trucks and masters at once — from the saved directory without internet. */}
+				<Pressable
+					onPress={() => router.push('/roadside')}
+					accessibilityRole="button"
+					style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, backgroundColor: c.dangerSoft, paddingVertical: 14, paddingHorizontal: 14 }}
+				>
+					<View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: c.danger, alignItems: 'center', justifyContent: 'center' }}>
+						<TowIcon size={22} color={fixed.white} strokeWidth={2} />
+					</View>
+					<View style={{ flex: 1, gap: 2 }}>
+						<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.danger }}>{t('Сломались в дороге?')}</Text>
+						<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(400), color: c.inkSecondary }}>{t('Эвакуатор и мастера рядом — даже без интернета')}</Text>
+					</View>
+					<ChevronIcon size={18} color={c.danger} />
+				</Pressable>
 
 				<MarketVideos />
 

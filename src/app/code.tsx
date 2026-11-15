@@ -10,6 +10,7 @@ import { useSendOtp, useVerifyOtp } from '@/api/auth'
 import { homeHref } from '@/store/useSession'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 const CODE_LENGTH = 4
 
@@ -71,7 +72,7 @@ export default function CodeScreen() {
 		<AuthLayout
 			topBar={
 				<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')}
-					onPress={() => router.back()}
+					onPress={() => goBack()}
 					style={{
 						width: 48,
 						height: 48,

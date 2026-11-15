@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useConfirmLeave } from '@/lib/use-confirm-leave'
 import { BrandLogo, toast } from '@/components/ui'
 import { VoicePlayer, VoiceRecordingPanel, VoiceResultPanel, useVoiceNote } from '@/components/voice'
@@ -14,6 +14,7 @@ import { useIncomingRequest, useMarkSeen, useReplyToRequest } from '@/api/incomi
 import type { PartCondition } from '@/api/types'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 
 /**
@@ -61,7 +62,7 @@ export default function SellerAnswerScreen() {
 				original: original ?? undefined,
 				voiceMediaId: voice?.id,
 			},
-			{ onSuccess: () => (toast(t('Ответ отправлен покупателю')), leave(() => router.back())) }
+			{ onSuccess: () => (toast(t('Ответ отправлен покупателю')), leave(() => goBack())) }
 		)
 
 	return (
@@ -77,7 +78,7 @@ export default function SellerAnswerScreen() {
 				</View>
 			</View>
 			<Pressable
-				onPress={() => router.back()}
+				onPress={() => goBack()}
 				style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(32,31,29,0.45)' }}
 			/>
 

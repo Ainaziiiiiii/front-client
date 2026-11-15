@@ -10,7 +10,8 @@ import { LocateIcon, SearchIcon } from '@/components/icons'
 import { addressAt, currentCoords } from '@/lib/locate'
 import { fixed, fontFamily, fs, useColors } from '@/theme'
 import { type Side, useAddContainer, useAddRow, useRowContainers, useRows } from '@/api/market'
-import { useBrands } from '@/api/directory'
+import { useBrands, useCategories } from '@/api/directory'
+import { CategoryChips } from '@/components/category-chips'
 import { useMyShop, useRegisterShop, useRelocateShop } from '@/api/shop'
 import { useSession } from '@/store/useSession'
 import { useClaimContainer } from '@/api/complaints'
@@ -18,6 +19,7 @@ import { ApiError } from '@/lib/api'
 import type { Brand } from '@/api/types'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 /** Rows in the order of the mockup grid [11]; rows the mockup doesn't know go after them. */
 const ROW_ORDER = ['19', '18', '17', '16', '15', '14', '13', '12', '11', '10', '9', '8', '7', '6', '5', '4', '1', t('К'), t('Ц'), t('Л'), t('Н'), t('Я'), t('С'), t('Ж'), t('Д'), t('В'), t('Ю'), t('Х'), t('У')]
@@ -58,6 +60,11 @@ export default function BoxSelectScreen() {
 	const [number, setNumber] = useState('')
 	const [side, setSide] = useState<Side | null>(null)
 	const [picked, setPicked] = useState<number[]>([])
+	// что продаёт — по марке и категории покупатель ищет на карте; можно не выбирать, поправит в «Мой бокс»
+	const [pickedCategories, setPickedCategories] = useState<number[]>([])
+	const categories = useCategories().data ?? []
+	const toggleCategory = (id: number) =>
+		setPickedCategories((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]))
 	const [othersOpen, setOthersOpen] = useState(false)
 	// «Это мой контейнер» — a taken box that is actually yours.
 	const [claim, setClaim] = useState<{ id: number; number: number } | null>(null)
@@ -143,7 +150,7 @@ export default function BoxSelectScreen() {
 		if (store) {
 			if (!point) return
 			register.mutate(
-				{ name: name.trim(), address: address.trim(), lat: point.lat, lng: point.lng, brandIds: picked },
+				{ name: name.trim(), address: address.trim(), lat: point.lat, lng: point.lng, brandIds: picked, categoryIds: pickedCategories },
 				{ onSuccess: (shop) => router.replace(shop.status === 'PENDING_VERIFICATION' ? '/under-review?kind=shop' : '/seller') }
 			)
 			return
@@ -152,8 +159,8 @@ export default function BoxSelectScreen() {
 			shop.status === 'PENDING_VERIFICATION' ? router.replace('/under-review?kind=shop') : (router.replace('/seller'), askForPushAt('shop'))
 		const go = (containerId: number) =>
 			hasShop
-				? relocate.mutate(containerId, { onSuccess: () => (toast(t('Контейнер изменён')), router.back()) })
-				: register.mutate({ containerId, brandIds: picked }, { onSuccess: done })
+				? relocate.mutate(containerId, { onSuccess: () => (toast(t('Контейнер изменён')), goBack()) })
+				: register.mutate({ containerId, brandIds: picked, categoryIds: pickedCategories }, { onSuccess: done })
 		if (slot) return go(slot.id)
 		if (!addReady || !row) return
 		addContainer.mutate({ rowId: row.id, number: typed, side: twoSides ? (side ?? undefined) : undefined }, { onSuccess: (box) => go(box.id) })
@@ -345,6 +352,13 @@ export default function BoxSelectScreen() {
 								<Text style={{ fontSize: fs.sm, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Другие')}</Text>
 							</Pressable>
 						</View>
+
+						{categories.length ? (
+							<>
+								<Label>{t('Что продаёте')}</Label>
+								<CategoryChips categories={categories} picked={pickedCategories} onToggle={toggleCategory} />
+							</>
+						) : null}
 					</>
 				)}
 

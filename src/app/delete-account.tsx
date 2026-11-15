@@ -11,6 +11,7 @@ import { useSession } from '@/store/useSession'
 import type { components } from '@/api/schema'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { useRoadsidePack } from '@/store/useRoadsidePack'
 
 type SendOtp = components['schemas']['SendOtpResponse']
 type Deletion = components['schemas']['DeletionResponse']
@@ -26,6 +27,8 @@ export default function DeleteAccountScreen() {
 	const send = useMutation({ mutationFn: () => apiFetch<SendOtp>('/me/deletion/otp', { method: 'POST' }) })
 	const confirm = useMutation({
 		mutationFn: () => apiFetch<Deletion>('/me/deletion', { method: 'POST', body: { code } }),
+		// The roadside directory outlives logout, not the account.
+		onSuccess: () => useRoadsidePack.getState().clear(),
 	})
 	const error = send.error ?? confirm.error
 

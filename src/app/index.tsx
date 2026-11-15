@@ -14,6 +14,7 @@ import { homeHref, useSession } from '@/store/useSession'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
 import { KgFlag } from '@/components/kg-flag'
+import { goBack } from '@/lib/navigation'
 
 const LANGS = [
 	{ value: 'ru', label: 'RU' },
@@ -167,7 +168,7 @@ export default function PhoneScreen() {
 			footer={
 				<View style={{ gap: 12 }}>
 					<Button label={t('Получить код')} disabled={!isValidLocalPhone(phone)} loading={sendOtp.isPending} onPress={submit} />
-					<Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/buyer'))} hitSlop={8} style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}>
+					<Pressable onPress={() => goBack('/buyer')} hitSlop={8} style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}>
 						<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Не сейчас')}</Text>
 					</Pressable>
 					{/* Entering means accepting the rules (App Store 1.2: user content needs agreed terms). */}

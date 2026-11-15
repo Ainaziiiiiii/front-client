@@ -18,6 +18,7 @@ import { useClientCar } from '@/store/useClientCar'
 import { useSession } from '@/store/useSession'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 /**
  * 04 «Найти запчасть»: car, photo + voice + text, the request goes to sellers of the car's brand.
@@ -89,7 +90,7 @@ export default function SearchPartScreen() {
 
 	return (
 		<View style={{ flex: 1, backgroundColor: c.surface, paddingTop: insets.top }}>
-			<ScreenHeader title={t('Найти запчасть')} big onClose={() => router.back()} />
+			<ScreenHeader title={t('Найти запчасть')} big onClose={() => goBack()} />
 
 			<ScrollView
 				contentContainerStyle={{ paddingTop: 4, paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}

@@ -141,20 +141,21 @@ export function useMarketGeo(highlightedRowIds: number[] = [], targetContainerId
 
 /**
  * «Mercedes-Benz — в 6 рядах · 21 бокс · ближайший ряд 14, 170 м» [15].
- * Without a point the server counts from the main entrance.
+ * categoryId вместе с маркой — «Toyota · Оптика»: только продавцы марки в этой категории.
+ * Without a point the server counts from the entrance nearest to the container.
  */
-export function useMapHighlight(kind: 'BRAND' | 'CATEGORY', id: number | undefined) {
+export function useMapHighlight(kind: 'BRAND' | 'CATEGORY', id: number | undefined, categoryId?: number) {
+	const query = categoryId ? { kind, id, categoryId } : { kind, id }
 	return useQuery({
-		queryKey: marketKeys.highlight({ kind, id }),
-		queryFn: ({ signal }) =>
-			apiFetch<MapHighlight>('/market/map/highlight', { query: { kind, id }, auth: false, signal }),
+		queryKey: marketKeys.highlight(query),
+		queryFn: ({ signal }) => apiFetch<MapHighlight>('/market/map/highlight', { query, auth: false, signal }),
 		enabled: Boolean(id),
 		placeholderData: keepPreviousData,
 	})
 }
 
 /** Route to a box [18]: polyline over the passages, minutes, metres and steps. */
-/** Маршрут до бокса. from — GPS покупателя: на рынке путь идёт от него, вне рынка сервер ведёт от входа. */
+/** Маршрут до бокса. from — GPS покупателя: на рынке путь идёт от него, рядом с рынком — от него через ближайший по пути вход, издалека — от входа. */
 export function useRoute(toContainerId: number, from?: { lat: number; lon: number } | null) {
 	const query = from ? { toContainerId, fromLat: from.lat, fromLon: from.lon } : { toContainerId }
 	return useQuery({

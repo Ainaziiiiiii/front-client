@@ -13,6 +13,7 @@ import { toPartFilters, useCatalogFilters } from '@/store/useCatalogFilters'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
 import { requireSignIn } from '@/components/sign-in-prompt'
+import { goBack } from '@/lib/navigation'
 
 /** 28 «Марка авто» — for the catalog when the car is not in the garage. */
 export default function PickBrandScreen() {
@@ -38,13 +39,13 @@ export default function PickBrandScreen() {
 	const apply = (withModel: boolean) => {
 		if (!brand) return
 		filters.pickBrand(brand, withModel && model ? { id: model.id, label: model.label } : null)
-		router.back()
+		goBack()
 	}
 	// A tapped model is the choice — no second tap on «Показать» that a long list pushes off the screen.
 	const pickModel = (picked: { id: number; label: string }) => {
 		if (!brand) return
 		filters.pickBrand(brand, { id: picked.id, label: picked.label })
-		router.back()
+		goBack()
 	}
 
 	return (

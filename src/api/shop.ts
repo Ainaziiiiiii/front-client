@@ -63,6 +63,13 @@ export function useSetShopBrands() {
 	return useShopMutation((brandIds: number[]) => apiFetch<MyShop>('/my/shop/brands', { method: 'PUT', body: { brandIds } }))
 }
 
+/** Что продаёт: ходовая, оптика, двигатель… — по ним покупатель ищет на карте «марка + категория». */
+export function useSetShopCategories() {
+	return useShopMutation((categoryIds: number[]) =>
+		apiFetch<MyShop>('/my/shop/categories', { method: 'PUT', body: { categoryIds } })
+	)
+}
+
 // ─── Photos of the place [22]: up to 8, the first is the cover ──────────────
 
 function usePhotosMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<ShopPhoto[]>) {

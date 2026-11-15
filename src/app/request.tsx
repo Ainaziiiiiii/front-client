@@ -26,6 +26,7 @@ import { t } from '@/i18n'
 import { flattenPages } from '@/api/pagination'
 import { useSearchParts } from '@/api/catalog'
 import { PartTile } from '@/components/catalog-screen'
+import { goBack } from '@/lib/navigation'
 
 type Sort = 'CHEAP' | 'RATING' | 'FIRST'
 
@@ -448,7 +449,7 @@ function FoundSheet({ id, replies, onClose }: { id: number; replies: Reply[]; on
 												toast(t('Запрос закрыт — спасибо!'))
 												askForReview()
 												onClose()
-												router.back()
+												goBack()
 											},
 										})
 									)

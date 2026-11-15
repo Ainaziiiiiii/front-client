@@ -11,9 +11,12 @@ import { LocateIcon, StoreIcon } from '@/components/icons'
 import { schemaToGeo } from '@/lib/geo'
 import { findContainer, searchMarket, type MarketHit } from '@/lib/market-search'
 import { useMapHighlight, useMarketScheme } from '@/api/market'
-import { useBrands } from '@/api/directory'
+import { useBrands, useCategories } from '@/api/directory'
+import { CategoryChips } from '@/components/category-chips'
 import { fixed, fontFamily, fs, LightTheme, raw, useColors } from '@/theme'
 import { t } from '@/i18n'
+import { goBack } from '@/lib/navigation'
+import { mapPalette } from '@/lib/map-palette'
 
 /** Отдельный экран (из профиля, поиска) — с кнопкой «Назад». Вкладка «Рынок» — app/buyer/market.tsx. */
 export default function MarketMapScreen() {
@@ -44,11 +47,14 @@ function MarketMapContent({ embedded }: { embedded: boolean }) {
 	const [focused, setFocused] = useState(false)
 	const [selectedId, setSelectedId] = useState<number | null>(Number(params.containerId) || null)
 	const [brandId, setBrandId] = useState<number | undefined>(Number(params.brandId) || undefined)
+	// после марки — что именно: ходовая, оптика… (одна категория, повторный тап снимает)
+	const [categoryId, setCategoryId] = useState<number | undefined>()
+	const categories = useCategories().data ?? []
 	const [sheetHeight, setSheetHeight] = useState(0)
 
 	const popular = useBrands({ popular: true }).data ?? []
 	const brandHits = useBrands(query.trim().length >= 2 ? { q: query.trim() } : {}).data ?? []
-	const highlight = useMapHighlight('BRAND', brandId).data
+	const highlight = useMapHighlight('BRAND', brandId, categoryId).data
 	const hits = useMemo(() => searchMarket(scheme, query, 6), [scheme, query])
 	const selected = selectedId ? findContainer(scheme, selectedId) : null
 	const brand = brandId ? [...popular, ...brandHits].find((b) => b.id === brandId) : undefined
@@ -72,7 +78,7 @@ function MarketMapContent({ embedded }: { embedded: boolean }) {
 		setSelectedId(containerId)
 		setFocused(false)
 		const found = findContainer(scheme, containerId)
-		if (found) mapRef.current?.focusOn(schemaToGeo(found.container.x, found.container.y), 19.2)
+		if (found) mapRef.current?.focusOn(schemaToGeo(found.container.x, found.container.y), 19)
 	}
 	const pickHit = (hit: MarketHit) => {
 		if (hit.kind === 'container') {
@@ -87,6 +93,7 @@ function MarketMapContent({ embedded }: { embedded: boolean }) {
 	}
 	const pickBrand = (id: number | undefined) => {
 		setBrandId(id)
+		setCategoryId(undefined)
 		setSelectedId(null)
 		setFocused(false)
 		if (id) setQuery('')
@@ -97,15 +104,22 @@ function MarketMapContent({ embedded }: { embedded: boolean }) {
 		setSelectedId(null)
 	}
 
-	// первый показ: весь рынок (или сразу выбранный контейнер); дальше камерой управляет человек
+	// первый показ: весь рынок (или сразу выбранный контейнер); дальше камерой управляет человек.
+	// Контейнер из ссылки ищем в схеме с сервера — во встроенной копии контейнеров нет, ждём её.
 	const framed = useRef(false)
+	const hasCells = scheme.rows.some((row) => row.containers?.length)
 	useEffect(() => {
 		if (framed.current || !sheetHeight) return
-		framed.current = true
-		const timer = setTimeout(() => (selectedId ? select(selectedId) : showMarket()), 400)
+		if (selectedId && !hasCells) return
+		// отметка — когда камера реально поехала: шторка за эти 400 мс меняет высоту, и таймер перезапускается
+		const timer = setTimeout(() => {
+			framed.current = true
+			if (selectedId) select(selectedId)
+			else showMarket()
+		}, 400)
 		return () => clearTimeout(timer)
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- только первый кадр
-	}, [sheetHeight])
+	}, [sheetHeight, hasCells])
 
 	const showResults = focused && query.trim().length > 0
 	const matchedBrands = query.trim().length >= 2 ? brandHits.slice(0, 3) : []
@@ -129,7 +143,7 @@ function MarketMapContent({ embedded }: { embedded: boolean }) {
 								<LoupeIcon size={20} color={c.muted} />
 							</View>
 						) : (
-							<Pressable accessibilityLabel={t('Назад')} onPress={() => router.back()} hitSlop={6} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+							<Pressable accessibilityLabel={t('Назад')} onPress={() => goBack()} hitSlop={6} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
 								<BackIcon size={22} color={c.ink} />
 							</Pressable>
 						)}
@@ -229,9 +243,22 @@ function MarketMapContent({ embedded }: { embedded: boolean }) {
 						})}
 					</ScrollView>
 				)}
+
+				{/* марка выбрана — что ищем у неё: ходовая, оптика, двигатель… */}
+				{brandId && !showResults && categories.length ? (
+					<CategoryChips
+						scroll
+						categories={categories}
+						picked={categoryId ? [categoryId] : []}
+						onToggle={(id) => {
+							setCategoryId((current) => (current === id ? undefined : id))
+							setSelectedId(null)
+						}}
+					/>
+				) : null}
 			</View>
 
-			{/* справа над шторкой: «Где я» и «Весь рынок» */}
+			{/* справа над шторкой: «Где я» */}
 			{sheetHeight > 0 ? (
 				<View style={{ position: 'absolute', right: 12, bottom: sheetHeight + 12, gap: 10 }}>
 					<RoundButton label={t('Где я')} onPress={() => mapRef.current?.focusOnMe(18.5)}>
@@ -318,7 +345,9 @@ function MarketMapContent({ embedded }: { embedded: boolean }) {
 								<Text style={{ fontSize: fs.md, lineHeight: 20, fontFamily: fontFamily(500), color: c.muted }}>
 									{highlight.containerIds.length
 										? t('{0} конт. в {1} рядах — отмечены синим', highlight.containerIds.length, highlight.rowsCount)
-										: t('Продавцов этой марки пока нет в приложении')}
+										: categoryId
+											? t('Продавцов этой марки с такой категорией пока нет в приложении')
+											: t('Продавцов этой марки пока нет в приложении')}
 								</Text>
 							</View>
 							<CloseButton onPress={() => pickBrand(undefined)} />
@@ -343,9 +372,8 @@ function MarketMapContent({ embedded }: { embedded: boolean }) {
 							</Text>
 						</View>
 						<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
-							<Legend color={fixed.plate} border={fixed.plateInk} label={t('вам сюда')} />
-							<Legend color={c.brandTint} border={c.brand} label={t('продавец в приложении')} />
-							<Legend color={c.brand} border={c.brandStrong} label={t('марка из фильтра')} />
+							<Legend color={mapPalette.target} border={mapPalette.target} label={t('куда идти')} />
+							<Legend color={mapPalette.cellShop} border={mapPalette.cellShopGlow} label={t('продавец в приложении — нажмите')} />
 						</View>
 					</>
 				)}

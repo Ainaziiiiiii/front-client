@@ -18,6 +18,7 @@ import type { MediaItem, PartCondition } from '@/api/types'
 import { MAX_PART_PHOTOS, type PartDraft, partBody, usePartDraft } from '@/store/usePartDraft'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { goBack } from '@/lib/navigation'
 
 const CONDITIONS: { value: PartCondition; label: string }[] = [
 	{ value: 'NEW', label: t('Новое') },
@@ -36,7 +37,7 @@ const MISSING: Record<string, string> = {
 }
 
 /** What the seller typed or picked — to tell an untouched form from one with unsaved input. */
-const fingerprint = (d: Pick<PartDraft, 'title' | 'categoryId' | 'condition' | 'price' | 'quantity' | 'oemNumber' | 'fitments' | 'photos'>) =>
+const fingerprint = (d: Pick<PartDraft, 'title' | 'categoryId' | 'condition' | 'price' | 'quantity' | 'oemNumber' | 'shipsToRegions' | 'fitments' | 'photos'>) =>
 	JSON.stringify([
 		d.title.trim(),
 		d.categoryId,
@@ -44,10 +45,11 @@ const fingerprint = (d: Pick<PartDraft, 'title' | 'categoryId' | 'condition' | '
 		d.price,
 		d.quantity,
 		d.oemNumber,
+		d.shipsToRegions,
 		d.fitments.map((f) => [f.brandId, f.modelId, f.yearFrom, f.yearTo]),
 		d.photos.map((p) => p.key),
 	])
-const EMPTY = fingerprint({ title: '', categoryId: undefined, condition: 'NEW', price: '', quantity: 1, oemNumber: undefined, fitments: [], photos: [] })
+const EMPTY = fingerprint({ title: '', categoryId: undefined, condition: 'NEW', price: '', quantity: 1, oemNumber: undefined, shipsToRegions: true, fitments: [], photos: [] })
 
 /** 26 «Новая запчасть» — create (after 24 / 25) or edit (`id`). Draft → publish. */
 export default function NewPartScreen() {
@@ -105,7 +107,7 @@ export default function NewPartScreen() {
 		try {
 			await saveDraft()
 			toast(t('Черновик сохранён'))
-			leave(() => router.back())
+			leave(() => goBack())
 		} catch {}
 	}
 
@@ -114,7 +116,7 @@ export default function NewPartScreen() {
 			const part = await saveDraft()
 			if (part.status !== 'ACTIVE') await publish.mutateAsync(part.id)
 			toast(part.status === 'ACTIVE' ? t('Изменения сохранены') : t('Опубликовано'))
-			leave(() => router.back())
+			leave(() => goBack())
 		} catch {}
 	}
 
@@ -420,6 +422,26 @@ export default function NewPartScreen() {
 				>
 					<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(600), color: c.ink }}>{t('Есть в наличии')}</Text>
 					<Toggle value={draft.quantity > 0} onChange={(on) => draft.set({ quantity: on ? 1 : 0 })} />
+				</View>
+
+				{/* Not only video parts: with this on, buyers see «Доставка» on the part's page. */}
+				<View
+					style={{
+						minHeight: 56,
+						borderRadius: 12,
+						backgroundColor: c.card,
+						paddingHorizontal: 14,
+						paddingVertical: 10,
+						flexDirection: 'row',
+						alignItems: 'center',
+						gap: 12,
+					}}
+				>
+					<View style={{ flex: 1, gap: 2 }}>
+						<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(600), color: c.ink }}>{t('Отправлю в регионы')}</Text>
+						<Text style={{ fontSize: fs.sm, lineHeight: 18.5, fontFamily: fontFamily(400), color: c.muted }}>{t('Курьер Ылдам Экспресс заберёт из контейнера')}</Text>
+					</View>
+					<Toggle value={draft.shipsToRegions} onChange={(on) => draft.set({ shipsToRegions: on })} />
 				</View>
 			</ScrollView>
 			)}

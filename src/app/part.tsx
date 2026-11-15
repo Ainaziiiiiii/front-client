@@ -14,6 +14,7 @@ import { type PartFilters, usePart, usePublicPart, useSearchParts, useSignedIn, 
 import { flattenPages } from '@/api/pagination'
 import { useVideoViewer } from '@/store/useVideoViewer'
 import { PlayIcon } from '@/components/voice'
+import { TruckIcon } from '@/components/video-v23'
 import { PartTile } from '@/components/catalog-screen'
 import { useOpenChat } from '@/api/chats'
 import type { PartCondition } from '@/api/types'
@@ -27,6 +28,7 @@ import { openShopRoute, shopPlace } from '@/lib/shop-place'
 import { t } from '@/i18n'
 import { formatOpenNow } from '@/lib/hours'
 import { openSignIn } from '@/components/sign-in-prompt'
+import { goBack } from '@/lib/navigation'
 
 const CONDITION: Record<PartCondition, string> = { NEW: t('Новое'), USED: t('Б/У'), ON_ORDER: t('Под заказ') }
 
@@ -126,7 +128,7 @@ export default function PartScreen() {
 						justifyContent: 'space-between',
 					}}
 				>
-					<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => router.back()} style={roundButton}>
+					<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => goBack()} style={roundButton}>
 						<ChevronLeftIcon size={24} color={c.ink} />
 					</Pressable>
 					<View style={{ flexDirection: 'row', gap: 8 }}>
@@ -219,6 +221,24 @@ export default function PartScreen() {
 							</View>
 						) : null}
 					</View>
+				) : null}
+
+				{/* Delivery for every part the seller ships — not only the ones posted as video (before: only in the reels). */}
+				{part?.shipsToRegions && part.stockStatus === 'IN_STOCK' ? (
+					<Pressable
+						onPress={() => (signedIn ? router.push({ pathname: '/delivery', params: { partId: String(part.id) } }) : openSignIn())}
+						accessibilityRole="button"
+						style={{ borderRadius: 16, backgroundColor: c.brandTint, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+					>
+						<View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
+							<TruckIcon size={24} color={c.brandStrong} />
+						</View>
+						<View style={{ flex: 1, gap: 2 }}>
+							<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.brandInk }}>{t('Доставка по Кыргызстану')}</Text>
+							<Text style={{ fontSize: fs.sm, lineHeight: 18.5, fontFamily: fontFamily(500), color: c.brandInk }}>{t('Курьер Ылдам Экспресс привезёт домой')}</Text>
+						</View>
+						<Text style={{ fontSize: fs.md, fontFamily: fontFamily(700), color: c.brandStrong }}>{t('Оформить')}</Text>
+					</Pressable>
 				) : null}
 
 				{shop ? (

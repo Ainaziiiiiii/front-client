@@ -190,7 +190,7 @@ export interface paths {
         get?: never;
         /**
          * Выбрать режим: покупатель или продавец
-         * @description Экран 03, а также «Я продавец — открыть бокс» (19) и «Перейти в режим покупателя» (21)
+         * @description Экран 03, а также «Я продавец — открыть контейнер» (19) и «Перейти в режим покупателя» (21)
          */
         put: operations["changeRole"];
         post?: never;
@@ -464,8 +464,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Расширить радиус (+5 км)
-         * @description До 50 км; новым мастерам — пуш, срок заново
+         * Расширить радиус
+         * @description Обычные услуги — +5 км до 50; эвакуатор и выездной мастер — вдвое (15 → 30 → 60 → 120 → 200), предел —
+         *     service.maxRadiusKm. Новым мастерам — пуш, срок заново.
          */
         post: operations["widen"];
         delete?: never;
@@ -1273,6 +1274,61 @@ export interface paths {
         put?: never;
         /** Сделать основной */
         post: operations["makePrimary"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ряды в порядке сетки (10а)
+         * @description onMap = false — ряда ещё нет на схеме: его контейнеры выбираются в сетке, но на карте их нет
+         *     и маршрут к ним не строится (GET /route — 409 CONTAINER_NOT_ON_MAP).
+         */
+        get: operations["rows"];
+        put?: never;
+        /**
+         * Добавить ряд, которого нет в списке (10а)
+         * @description Любой вошедший пользователь. code — как ввёл продавец: «ф», «Ряд Ф», «k» → «Ф», «К» (без слова «ряд»,
+         *     заглавными, латинские двойники — кириллицей); 1–10 символов: буквы, цифры, пробел, дефис.
+         *     Ряд с таким кодом уже есть — 200 с ним (выключенный включается); новый — 201. Новый ряд без формы на схеме
+         *     (onMap = false): контейнеры — через POST /rows/{id}/containers.
+         */
+        post: operations["addRow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/rows/{id}/containers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Контейнеры ряда по сторонам (10а, 15, 31)
+         * @description occupied — место занято магазином (серое на 10а); shop = null и state = NO_SELLER — «Нет продавца
+         *     в приложении». С brandId (экран 31): sellsBrand у каждого контейнера и brandSellers — «продают Toyota: 9».
+         */
+        get: operations["row"];
+        put?: never;
+        /**
+         * Добавить недостающий контейнер в ряд (10а)
+         * @description Продавец не нашёл свой контейнер в сетке. Любой вошедший пользователь. side не передан: у ряда контейнеры
+         *     на одной стороне — она; на двух — 400 SIDE_REQUIRED; контейнеров нет — NORTH (вертикальный ряд — EAST).
+         *     Ответ — тот же контейнер, что в GET /rows/{id}/containers; он сразу есть в сетке и на карте.
+         */
+        post: operations["addContainer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3080,7 +3136,11 @@ export interface paths {
         get: operations["detail"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Удалить заявку из «Моих заявок»
+         * @description Пропадает у покупателя. Открытая закрывается — мастера её больше не видят; их отклики и чаты остаются.
+         */
+        delete: operations["hide"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3169,6 +3229,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roadside/offline-pack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Справочник мастеров на телефон (без интернета)
+         * @description Все действующие мастера, СТО и эвакуаторы: имя, телефон, точка, услуги, радиус, марки — без фото.
+         *     Плюс услуги для чипсов и экстренные номера (112, 103, 102, 101). Хранить на телефоне: без сети расстояние
+         *     считать по GPS (гаверсинус), «Позвонить» — tel:, «SMS» с координатами — sms:.
+         *     Обновлять после входа и раз в сутки с If-None-Match: без изменений — 304 без тела (не тратит лимит).
+         */
+        get: operations["pack"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roadside/offline-pack/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Версия справочника
+         * @description Короткая проверка при запуске: version не совпала с сохранённой — скачать /roadside/offline-pack.
+         */
+        get: operations["version"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roadside/nearby": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Кто рядом — без заявки
+         * @description Ближайшие действующие мастера (service — только этой услуги, например TOW_TRUCK), без обрезки по радиусу:
+         *     на трассе ближайший эвакуатор может быть за 100 км. Сначала те, кто доедет (reachesYou) и берётся за машину
+         *     (worksWithCar; машина — carId из гаража или brandId + origin, необязательно), дальше — по расстоянию.
+         *     У каждого phone — «Позвонить», lat/lng — «Маршрут». limit — по умолчанию 20, до 50.
+         */
+        get: operations["nearby"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reviews/tags": {
         parameters: {
             query?: never;
@@ -3201,7 +3327,11 @@ export interface paths {
         get: operations["detail_1"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Удалить запрос из «Моих запросов»
+         * @description Пропадает у покупателя. Открытый закрывается — продавцы его больше не видят; их ответы и чаты остаются.
+         */
+        delete: operations["hide_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3483,7 +3613,7 @@ export interface paths {
         };
         /**
          * Подходящие свои запчасти для ответа «Есть» (12)
-         * @description Опубликованные запчасти бокса под машину запроса, сначала совпавшие с текстом. id — в partId ответа
+         * @description Опубликованные запчасти контейнера под машину запроса, сначала совпавшие с текстом. id — в partId ответа
          */
         get: operations["suggestedParts"];
         put?: never;
@@ -3754,44 +3884,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/market/rows": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Ряды в порядке сетки (10а) */
-        get: operations["rows"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/market/rows/{id}/containers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Контейнеры ряда по сторонам (10а, 15, 31)
-         * @description occupied — место занято магазином (серое на 10а); shop = null и state = NO_SELLER — «Нет продавца
-         *     в приложении». С brandId (экран 31): sellsBrand у каждого контейнера и brandSellers — «продают Toyota: 9».
-         */
-        get: operations["row"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/market/rows/{id}": {
         parameters: {
             query?: never;
@@ -3862,7 +3954,8 @@ export interface paths {
         /**
          * Схема рынка целиком (15, 18)
          * @description Граница, улицы, ряды с контейнерами, проходы, входы, парковка, матрица GPS.
-         *     ETag "map-v{version}": с If-None-Match приходит 304, если схема не менялась.
+         *     ETag "map-v{version}-{магазины}": с If-None-Match приходит 304, если не менялись ни схема,
+         *     ни магазины в контейнерах.
          */
         get: operations["map"];
         put?: never;
@@ -3882,7 +3975,7 @@ export interface paths {
         };
         /**
          * Подсветка рядов по марке или категории (15)
-         * @description kind=BRAND&id={brandId} или kind=CATEGORY&id={categoryId}. «Mercedes-Benz — в 6 рядах · 21 бокс ·
+         * @description kind=BRAND&id={brandId} (и categoryId — марка в этой категории) или kind=CATEGORY&id={categoryId}. «Mercedes-Benz — в 6 рядах · 21 бокс ·
          *     ближайший ряд 14, 170 м»: rowIds, containerIds, shopsCount, rowsCount, openNowCount, nearest*.
          *     Откуда считать ближайший, как в /market/route: fromX/fromY → fromLat/fromLon → fromEntrance → главный вход.
          */
@@ -5111,6 +5204,7 @@ export interface components {
             lat: number | null;
             /** Format: double */
             lng: number | null;
+            manualPlace: string | null;
         };
         OpenStateDto: {
             openNow: boolean;
@@ -5180,6 +5274,8 @@ export interface components {
             urgent: boolean;
             /** @enum {string} */
             defaultDuration: "MIN_15" | "MIN_30" | "HOUR_1" | "HOUR_3" | "END_OF_DAY";
+            /** Format: int32 */
+            maxRadiusKm: number;
         };
         Avatar: {
             /** Format: int64 */
@@ -5443,6 +5539,8 @@ export interface components {
             defaultDuration: "MIN_15" | "MIN_30" | "HOUR_1" | "HOUR_3" | "END_OF_DAY";
             /** Format: int32 */
             defaultRadiusKm: number;
+            /** Format: int32 */
+            maxRadiusKm: number;
             active: boolean;
             /** Format: int64 */
             mastersCount: number;
@@ -5543,6 +5641,7 @@ export interface components {
             openFrom?: components["schemas"]["LocalTime"];
             openTo?: components["schemas"]["LocalTime"];
             workDays?: ("MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY")[];
+            manualPlace?: string;
         };
         CreateServiceRequest: {
             service: string;
@@ -5578,6 +5677,8 @@ export interface components {
             radiusKm?: number;
             /** @enum {string} */
             duration?: "MIN_15" | "MIN_30" | "HOUR_1" | "HOUR_3" | "END_OF_DAY";
+            /** Format: date-time */
+            locatedAt?: string;
         };
         MediaItemDto: {
             /** Format: int64 */
@@ -5656,6 +5757,8 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             closedAt: string | null;
+            /** Format: date-time */
+            locatedAt: string | null;
         };
         VoiceDto: {
             /** Format: int64 */
@@ -6201,6 +6304,45 @@ export interface components {
             /** @enum {string} */
             origin: "JAPAN" | "USA" | "EUROPE" | "KOREA" | "UAE" | "UNKNOWN";
             fromTechPassport: boolean;
+        };
+        AddRowRequest: {
+            code?: string;
+        };
+        RowDto: {
+            /** Format: int64 */
+            id: number;
+            code: string;
+            label: string;
+            /** @enum {string} */
+            type: "ROW" | "VROW" | "STALL";
+            /** Format: int32 */
+            containerCount: number;
+            onMap: boolean;
+        };
+        AddContainerRequest: {
+            /** Format: int32 */
+            number: number;
+            /** @enum {string|null} */
+            side?: "NORTH" | "SOUTH" | "WEST" | "EAST" | null;
+        };
+        ContainerSlotDto: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int32 */
+            number: number;
+            /** @enum {string} */
+            side: "NORTH" | "SOUTH" | "WEST" | "EAST";
+            occupied: boolean;
+            /** @enum {string} */
+            state: "HAS_SELLER" | "NO_SELLER";
+            sellsBrand: boolean | null;
+            shop: components["schemas"]["Tenant"] | null;
+        };
+        Tenant: {
+            /** Format: int64 */
+            shopId: number | null;
+            name: string | null;
+            avatarUrl: string | null;
         };
         LocateRequest: {
             /** Format: double */
@@ -6893,6 +7035,8 @@ export interface components {
             defaultDuration?: "MIN_15" | "MIN_30" | "HOUR_1" | "HOUR_3" | "END_OF_DAY";
             /** Format: int32 */
             defaultRadiusKm?: number;
+            /** Format: int32 */
+            maxRadiusKm?: number;
         };
         CreateHintRequest: {
             textRu: string;
@@ -7311,6 +7455,8 @@ export interface components {
             defaultDuration?: "MIN_15" | "MIN_30" | "HOUR_1" | "HOUR_3" | "END_OF_DAY";
             /** Format: int32 */
             defaultRadiusKm?: number;
+            /** Format: int32 */
+            maxRadiusKm?: number;
             active?: boolean;
         };
         UpdateModelRequest: {
@@ -7385,6 +7531,14 @@ export interface components {
             /** Format: int32 */
             reviews: number;
         };
+        ShopPartCategory: {
+            /** Format: int64 */
+            id: number;
+            slug: string;
+            name: string;
+            /** Format: int64 */
+            count: number;
+        };
         ShopPublicDto: {
             /** Format: int64 */
             id: number;
@@ -7409,14 +7563,6 @@ export interface components {
             /** Format: double */
             lng: number | null;
             partCategories: components["schemas"]["ShopPartCategory"][];
-        };
-        ShopPartCategory: {
-            /** Format: int64 */
-            id: number;
-            slug: string;
-            name: string;
-            /** Format: int64 */
-            count: number;
         };
         ServiceRecipientCounts: {
             /** Format: int64 */
@@ -7474,6 +7620,62 @@ export interface components {
             /** Format: int32 */
             recipients: number;
             label: string;
+        };
+        EmergencyNumber: {
+            number: string;
+            nameRu: string;
+            nameKg: string;
+        };
+        OfflinePackDto: {
+            version: string;
+            /** Format: date-time */
+            generatedAt: string;
+            serviceTypes: components["schemas"]["PackServiceType"][];
+            emergency: components["schemas"]["EmergencyNumber"][];
+            masters: components["schemas"]["PackMaster"][];
+        };
+        PackMaster: {
+            /** Format: int64 */
+            id: number;
+            name: string;
+            phone: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            address: string;
+            services: string[];
+            mobile: boolean;
+            /** Format: int32 */
+            radiusKm: number;
+            rating: number;
+            /** Format: int32 */
+            reviewsCount: number;
+            allBrands: boolean;
+            brandIds: number[];
+            origins: ("JAPAN" | "USA" | "EUROPE" | "KOREA" | "UAE" | "UNKNOWN")[];
+        };
+        PackServiceType: {
+            code: string;
+            nameRu: string;
+            nameKg: string;
+            icon: string;
+            urgent: boolean;
+            /** Format: int32 */
+            maxRadiusKm: number;
+        };
+        Version: {
+            version: string;
+            /** Format: int32 */
+            mastersCount: number;
+        };
+        NearbyMasterDto: {
+            master: components["schemas"]["MasterCardDto"];
+            /** Format: int32 */
+            distanceM: number;
+            services: string[];
+            reachesYou: boolean;
+            worksWithCar: boolean | null;
         };
         Have: {
             shop: components["schemas"]["ShopCardDto"];
@@ -7746,6 +7948,8 @@ export interface components {
             expiresAt: string;
             seen: boolean;
             myOffer: components["schemas"]["ServiceOfferDto"] | null;
+            /** Format: date-time */
+            locatedAt: string | null;
         };
         ModelSearchItem: {
             model: components["schemas"]["ModelDto"];
@@ -7790,27 +7994,6 @@ export interface components {
             rows: components["schemas"]["RowDto"][];
             containers: components["schemas"]["LocationDto"][];
         };
-        RowDto: {
-            /** Format: int64 */
-            id: number;
-            code: string;
-            label: string;
-            /** @enum {string} */
-            type: "ROW" | "VROW" | "STALL";
-            /** Format: int32 */
-            containerCount: number;
-        };
-        ContainerSlotDto: {
-            /** Format: int64 */
-            id: number;
-            /** Format: int32 */
-            number: number;
-            occupied: boolean;
-            /** @enum {string} */
-            state: "HAS_SELLER" | "NO_SELLER";
-            sellsBrand: boolean | null;
-            shop: components["schemas"]["Tenant"] | null;
-        };
         RowDetailDto: {
             /** Format: int64 */
             id: number;
@@ -7826,12 +8009,6 @@ export interface components {
             /** @enum {string} */
             side: "NORTH" | "SOUTH" | "WEST" | "EAST";
             containers: components["schemas"]["ContainerSlotDto"][];
-        };
-        Tenant: {
-            /** Format: int64 */
-            shopId: number | null;
-            name: string | null;
-            avatarUrl: string | null;
         };
         RouteDto: {
             target: components["schemas"]["LocationDto"];
@@ -7861,9 +8038,9 @@ export interface components {
             row: components["schemas"]["RowDto"] | null;
             container: components["schemas"]["LocationDto"] | null;
             /** Format: double */
-            x: number;
+            x: number | null;
             /** Format: double */
-            y: number;
+            y: number | null;
         };
         GeoCalibration: {
             /** Format: double */
@@ -7898,6 +8075,7 @@ export interface components {
             angle: number;
             /** Format: double */
             length: number;
+            shop: components["schemas"]["Tenant"] | null;
         };
         MapDto: {
             /** Format: int32 */
@@ -9619,7 +9797,7 @@ export interface operations {
                     "*/*": components["schemas"]["ReplyDto"];
                 };
             };
-            /** @description SHOP_NOT_ACTIVE — бокс не проверен или заблокирован */
+            /** @description SHOP_NOT_ACTIVE — контейнер не проверен или заблокирован */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10756,6 +10934,145 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CarDto"];
+                };
+            };
+        };
+    };
+    rows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RowDto"][];
+                };
+            };
+        };
+    };
+    addRow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddRowRequest"];
+            };
+        };
+        responses: {
+            /** @description Ряд уже был — найден (или включён снова) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RowDto"];
+                };
+            };
+            /** @description Ряд создан */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RowDto"];
+                };
+            };
+            /** @description BAD_ROW_CODE — недопустимый код ряда */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RowDto"];
+                };
+            };
+        };
+    };
+    row: {
+        parameters: {
+            query?: {
+                brandId?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RowDetailDto"];
+                };
+            };
+        };
+    };
+    addContainer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddContainerRequest"];
+            };
+        };
+        responses: {
+            /** @description Контейнер создан (или включён снова, если был выключен) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContainerSlotDto"];
+                };
+            };
+            /** @description SIDE_REQUIRED — у ряда две стороны; WRONG_SIDE — такой стороны нет */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContainerSlotDto"];
+                };
+            };
+            /** @description ROW_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContainerSlotDto"];
+                };
+            };
+            /** @description CONTAINER_EXISTS — такой номер на этой стороне уже есть */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ContainerSlotDto"];
                 };
             };
         };
@@ -13675,6 +13992,26 @@ export interface operations {
             };
         };
     };
+    hide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     stats: {
         parameters: {
             query?: never;
@@ -13772,6 +14109,83 @@ export interface operations {
             };
         };
     };
+    pack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Справочник не менялся — оставить сохранённый */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OfflinePackDto"];
+                };
+            };
+            /** @description PACK_RATE_LIMITED — больше 20 скачиваний за сутки */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OfflinePackDto"];
+                };
+            };
+        };
+    };
+    version: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["Version"];
+                };
+            };
+        };
+    };
+    nearby: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+                service?: string;
+                carId?: number;
+                brandId?: number;
+                origin?: "JAPAN" | "USA" | "EUROPE" | "KOREA" | "UAE" | "UNKNOWN";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NearbyMasterDto"][];
+                };
+            };
+        };
+    };
     reviewTags: {
         parameters: {
             query?: never;
@@ -13811,6 +14225,26 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["RequestDetailDto"];
                 };
+            };
+        };
+    };
+    hide_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -14464,50 +14898,6 @@ export interface operations {
             };
         };
     };
-    rows: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RowDto"][];
-                };
-            };
-        };
-    };
-    row: {
-        parameters: {
-            query?: {
-                brandId?: number;
-            };
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["RowDetailDto"];
-                };
-            };
-        };
-    };
     row_1: {
         parameters: {
             query?: {
@@ -14548,8 +14938,8 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
-            200: {
+            /** @description CONTAINER_NOT_ON_MAP — ряда контейнера ещё нет на схеме */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14608,6 +14998,8 @@ export interface operations {
             query: {
                 kind: "BRAND" | "CATEGORY";
                 id: number;
+                /** @description Вместе с kind=BRAND: только магазины этой категории */
+                categoryId?: number;
                 fromX?: number;
                 fromY?: number;
                 fromLat?: number;

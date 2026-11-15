@@ -21,6 +21,7 @@ import { PartTile } from '@/components/catalog-screen'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
 import { openSignIn } from '@/components/sign-in-prompt'
+import { goBack } from '@/lib/navigation'
 
 /** Filled rating stars — gold, the empty ones stay grey. */
 const STAR = fixed.star
@@ -106,7 +107,7 @@ export default function SellerProfileForBuyerScreen() {
 							alignItems: 'center',
 						}}
 					>
-						<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => router.back()} style={roundButton}>
+						<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')} onPress={() => goBack()} style={roundButton}>
 							<ChevronLeftIcon size={24} color={c.ink} />
 						</Pressable>
 						<View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>

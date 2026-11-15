@@ -22,6 +22,7 @@ import { useVideoViewer } from '@/store/useVideoViewer'
 import { marketPlace } from '@/lib/shop-place'
 import { t } from '@/i18n'
 import { openSignIn } from '@/components/sign-in-prompt'
+import { goBack } from '@/lib/navigation'
 
 /**
  * Videos from the market, full screen (like reels): a video is a part for sale, swiping shows only videos.
@@ -112,7 +113,7 @@ function VideoFeed({ top, bottom }: { top: number; bottom: number }) {
 
 			<View style={{ position: 'absolute', top: top + 8, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
 				<Pressable accessibilityRole="button" accessibilityLabel={t('Назад')}
-					onPress={() => router.back()}
+					onPress={() => goBack()}
 					hitSlop={10}
 					style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}
 				>

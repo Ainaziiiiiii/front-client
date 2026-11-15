@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
-import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Image } from '@/components/ui/image'
 import { Button, ScreenHeader, toast } from '@/components/ui'
@@ -10,6 +9,7 @@ import { resolveUrl } from '@/lib/api'
 import { useMe, useUpdateMe } from '@/api/me'
 import { usePhotoUploads } from '@/api/media'
 import { t } from '@/i18n'
+import { goBack } from '@/lib/navigation'
 
 /** The cities people pick most; anything else goes in «Другой». */
 const CITIES = [t('Бишкек'), t('Ош'), t('Джалал-Абад'), t('Каракол'), t('Токмок'), t('Кара-Балта'), t('Узген'), t('Нарын'), t('Талас'), t('Баткен')]
@@ -29,7 +29,7 @@ export default function ProfileEditScreen() {
 	const letter = (name.trim() || '?').charAt(0).toUpperCase()
 
 	const submit = () =>
-		save.mutate({ name: name.trim() || undefined, city: city.trim() }, { onSuccess: () => (toast(t('Сохранено')), router.back()) })
+		save.mutate({ name: name.trim() || undefined, city: city.trim() }, { onSuccess: () => (toast(t('Сохранено')), goBack()) })
 
 	const chip = (label: string, selected: boolean, onPress: () => void) => (
 		<Pressable
