@@ -13,6 +13,7 @@ import { useShopList } from '@/api/catalog'
 import type { ShopCard } from '@/api/types'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
+import { MarketChips } from '@/components/market-chips'
 
 /** «Все магазины»: боксы рынка и центры вне рынка — логотип, название, рейтинг, место; поиск по названию. */
 export default function ShopsScreen() {
@@ -20,7 +21,8 @@ export default function ShopsScreen() {
 	const insets = useSafeAreaInsets()
 	const [text, setText] = useState('')
 	const [q, setQ] = useState('')
-	const shops = useShopList(q)
+	const [marketId, setMarketId] = useState<number | null>(null)
+	const shops = useShopList(q, marketId)
 	const items = flattenPages(shops.data)
 
 	// Search 350 ms after the last key.
@@ -64,6 +66,7 @@ export default function ShopsScreen() {
 								style={{ flex: 1, fontSize: fs.lg, fontFamily: fontFamily(400), color: c.ink, padding: 0 }}
 							/>
 						</View>
+						<MarketChips value={marketId} onChange={setMarketId} />
 						<QueryErrorBanner error={shops.error} onRetry={() => shops.refetch()} />
 					</View>
 				}

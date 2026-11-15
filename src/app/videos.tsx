@@ -41,7 +41,8 @@ function VideoFeed({ top, bottom }: { top: number; bottom: number }) {
 	const items = flattenPages(feed.data)
 	const [height, setHeight] = useState(0)
 	const [index, setIndex] = useState(0)
-	const [muted, setMuted] = useState(true)
+	// Sound on by default — the feed is opened by a tap, so browsers allow it too; the button turns it off.
+	const [muted, setMuted] = useState(false)
 	const focused = useIsFocused()
 	const listRef = useRef<FlatList<VideoFeedItem>>(null)
 
@@ -212,21 +213,11 @@ function FeedPage({
 			/>
 			<View style={{ height: top }} />
 
-			<View style={{ position: 'absolute', right: 12, bottom: bottom + 250, gap: 14, alignItems: 'center' }}>
-				{rail.map((button) => (
-					<Pressable key={button.key} onPress={button.onPress} hitSlop={6} style={{ alignItems: 'center', gap: 4 }}>
-						<View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
-							{button.icon}
-						</View>
-						{button.label ? <Text style={{ fontSize: fs.sm, fontFamily: fontFamily(700), color: fixed.white }}>{button.label}</Text> : null}
-					</Pressable>
-				))}
-			</View>
-
 			<View style={{ position: 'absolute', left: 16, right: 16, bottom: bottom + 16, gap: 8 }}>
 				<Pressable
 					onPress={() => router.push({ pathname: '/seller-profile', params: { id: String(shop.id) } })}
-					style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingRight: 64 }}
+					// As wide as its content, not the whole row — otherwise it lies under the sound button on the right.
+					style={{ flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'flex-start', maxWidth: '78%' }}
 				>
 					{shop.avatarUrl ? (
 						<Image source={{ uri: resolveUrl(shop.avatarUrl) }} style={{ width: 32, height: 32, borderRadius: 16 }} />
@@ -235,7 +226,7 @@ function FeedPage({
 							<Text style={{ fontSize: fs.base, fontFamily: fontFamily(700), color: fixed.white }}>{shop.name.slice(0, 1).toUpperCase()}</Text>
 						</View>
 					)}
-					<View style={{ flex: 1 }}>
+					<View style={{ flexShrink: 1 }}>
 						<Text numberOfLines={1} style={{ fontSize: fs.base, fontFamily: fontFamily(700), color: fixed.white }}>
 							{shop.name}
 						</Text>
@@ -298,6 +289,18 @@ function FeedPage({
 					) : null}
 				</View>
 			</View>
+			{/* After the bottom block: a long title makes it tall, and it must not take taps meant for these buttons. */}
+			<View style={{ position: 'absolute', right: 12, bottom: bottom + 250, gap: 14, alignItems: 'center' }}>
+				{rail.map((button) => (
+					<Pressable key={button.key} onPress={button.onPress} hitSlop={6} style={{ alignItems: 'center', gap: 4 }}>
+						<View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
+							{button.icon}
+						</View>
+						{button.label ? <Text style={{ fontSize: fs.sm, fontFamily: fontFamily(700), color: fixed.white }}>{button.label}</Text> : null}
+					</Pressable>
+				))}
+			</View>
+
 			{commenting ? <CommentsSheet partId={item.partId} onClose={() => setCommenting(false)} /> : null}
 		</View>
 	)

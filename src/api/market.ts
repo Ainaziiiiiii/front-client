@@ -6,7 +6,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { API_URL, apiFetch } from '@/lib/api'
 import { buildMarketGeo, bundledScheme, type MarketScheme } from '@/lib/market-geojson'
 import { marketKeys } from './keys'
-import type { MapHighlight, MarketRoute, MarketRow, MarketSearch, QrResolve, RowDetail } from './types'
+import type { MapHighlight, Market, MarketRoute, MarketRow, MarketSearch, QrResolve, RowDetail } from './types'
 
 export type Side = 'NORTH' | 'SOUTH' | 'WEST' | 'EAST'
 export type ContainerSlot = RowDetail['sides'][number]['containers'][number]
@@ -183,5 +183,17 @@ export function useQrResolve(token: string) {
 		queryFn: ({ signal }) => apiFetch<QrResolve>(`/market/qr/${encodeURIComponent(token)}`, { auth: false, signal }),
 		enabled: Boolean(token),
 		retry: false,
+	})
+}
+
+/**
+ * Markets: Кудайберген (with the row scheme), Дордой Моторс, Дордой, Геология — the seller's «Где вы продаёте» and
+ * the buyer's «Рынок» filter (marketId in /parts/search, /shops, /catalog/videos; 0 — shops off the markets).
+ */
+export function useMarkets() {
+	return useQuery({
+		queryKey: ['market', 'markets'],
+		queryFn: ({ signal }) => apiFetch<Market[]>('/market/markets', { auth: false, signal }),
+		staleTime: 24 * 60 * 60_000,
 	})
 }

@@ -90,6 +90,15 @@ export type Unread = Schemas['UnreadDto']
 
 // ─── Market ──────────────────────────────────────────────────────────────────
 export type MarketRow = Schemas['RowDto']
+/** GET /market/markets — until schema.ts is regenerated from the deployed API. */
+export interface Market {
+	id: number
+	code: string
+	name: string
+	hasScheme: boolean
+	lat: number | null
+	lng: number | null
+}
 export type RowDetail = Schemas['RowDetailDto']
 export type ContainerSlot = Schemas['ContainerSlotDto']
 export type MapHighlight = Schemas['MapHighlightDto']

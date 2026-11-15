@@ -68,7 +68,9 @@ export function IntroSplash({ onDone }: { onDone: () => void }) {
 	return (
 		<Animated.View
 			pointerEvents="none"
-			style={[StyleSheet.absoluteFill, { zIndex: 100, opacity: fade, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', gap: 22 }]}
+			// elevation: on Android cards with a shadow (elevation) of the screen below draw over a plain zIndex — their
+			// shadows showed through the card. Higher than any in the app.
+			style={[StyleSheet.absoluteFill, { zIndex: 100, elevation: 1000, opacity: fade, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', gap: 22 }]}
 		>
 			<Animated.View
 				style={{

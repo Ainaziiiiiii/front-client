@@ -9,7 +9,7 @@ import { BrandTile, Label, PlusIcon, TickIcon } from '@/components/seller-v23'
 import { LocateIcon, SearchIcon } from '@/components/icons'
 import { addressAt, currentCoords } from '@/lib/locate'
 import { fixed, fontFamily, fs, useColors } from '@/theme'
-import { type Side, useAddContainer, useAddRow, useRowContainers, useRows } from '@/api/market'
+import { type Side, useAddContainer, useAddRow, useMarkets, useRowContainers, useRows } from '@/api/market'
 import { useBrands, useCategories } from '@/api/directory'
 import { CategoryChips } from '@/components/category-chips'
 import { useMyShop, useRegisterShop, useRelocateShop } from '@/api/shop'
@@ -38,8 +38,9 @@ const SIDE_NAMES: Record<Side, string> = {
 const TILES = 5
 
 /**
- * 11 «Где вы продаёте» — registration in one minute: on the Кудайберген market (row, container number) or a shop /
- * centre elsewhere (name, address, the point by geolocation), then brands → POST /shops.
+ * 11 «Где вы продаёте» — registration in one minute: on the Кудайберген market (row, container number), on another
+ * market without a scheme (Дордой, Дордой Моторс, Геология: the market and the place as text) or a shop / centre
+ * elsewhere (name, address, the point by geolocation), then brands → POST /shops.
  * With a shop already — moving to another container (brands are changed in «Мой бокс»).
  */
 export default function BoxSelectScreen() {
@@ -68,9 +69,14 @@ export default function BoxSelectScreen() {
 	const [othersOpen, setOthersOpen] = useState(false)
 	// «Это мой контейнер» — a taken box that is actually yours.
 	const [claim, setClaim] = useState<{ id: number; number: number } | null>(null)
-	// A seller off the market (a Kia / Toyota centre…): name, address and the point.
-	const [onMarket, setOnMarket] = useState(true)
-	const store = !hasShop && !onMarket
+	// Кудайберген — row and container; another market — which one and the place as text; a shop / centre (Kia,
+	// Toyota…) — name, address and the point.
+	const [where, setWhere] = useState<'KUDAIBERGEN' | 'MARKET' | 'STORE'>('KUDAIBERGEN')
+	const store = !hasShop && where === 'STORE'
+	const otherMarket = !hasShop && where === 'MARKET'
+	const markets = (useMarkets().data ?? []).filter((market) => !market.hasScheme)
+	const [marketId, setMarketId] = useState<number | null>(null)
+	const [manualPlace, setManualPlace] = useState('')
 	const [name, setName] = useState('')
 	const [address, setAddress] = useState('')
 	const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null)
@@ -132,7 +138,9 @@ export default function BoxSelectScreen() {
 
 	const ready = store
 		? Boolean(name.trim() && address.trim() && point && picked.length > 0)
-		: Boolean((slot ? !taken : addReady) && (hasShop || picked.length > 0))
+		: otherMarket
+			? Boolean(marketId && manualPlace.trim().length >= 2 && picked.length > 0)
+			: Boolean((slot ? !taken : addReady) && (hasShop || picked.length > 0))
 	const error = register.error ?? relocate.error ?? addContainer.error ?? addRow.error
 	const field = {
 		height: 52,
@@ -157,6 +165,14 @@ export default function BoxSelectScreen() {
 		}
 		const done = (shop: { status: string }) =>
 			shop.status === 'PENDING_VERIFICATION' ? router.replace('/under-review?kind=shop') : (router.replace('/seller'), askForPushAt('shop'))
+		if (otherMarket) {
+			if (!marketId) return
+			register.mutate(
+				{ marketId, manualPlace: manualPlace.trim(), name: name.trim() || undefined, brandIds: picked, categoryIds: pickedCategories },
+				{ onSuccess: done }
+			)
+			return
+		}
 		const go = (containerId: number) =>
 			hasShop
 				? relocate.mutate(containerId, { onSuccess: () => (toast(t('Контейнер изменён')), goBack()) })
@@ -179,25 +195,60 @@ export default function BoxSelectScreen() {
 
 				{hasShop ? null : (
 					<View style={{ flexDirection: 'row', padding: 4, borderRadius: 14, backgroundColor: c.fill, gap: 4 }}>
-						{[
-							{ value: true, label: t('На рынке Кудайберген') },
-							{ value: false, label: t('Магазин или центр') },
-						].map((option) => {
-							const active = onMarket === option.value
+						{([
+							{ value: 'KUDAIBERGEN', label: t('Кудайберген') },
+							{ value: 'MARKET', label: t('Другой рынок') },
+							{ value: 'STORE', label: t('Магазин, центр') },
+						] as const).map((option) => {
+							const active = where === option.value
 							return (
 								<Pressable
-									key={option.label}
-									onPress={() => setOnMarket(option.value)}
+									key={option.value}
+									onPress={() => setWhere(option.value)}
 									style={{ flex: 1, height: 40, borderRadius: 11, backgroundColor: active ? c.card : 'transparent', alignItems: 'center', justifyContent: 'center' }}
 								>
-									<Text style={{ fontSize: fs.md, fontFamily: fontFamily(active ? 700 : 600), color: active ? c.ink : c.muted }}>{option.label}</Text>
+									<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: fs.md, fontFamily: fontFamily(active ? 700 : 600), color: active ? c.ink : c.muted }}>{option.label}</Text>
 								</Pressable>
 							)
 						})}
 					</View>
 				)}
 
-				{store ? (
+				{otherMarket ? (
+					<>
+						<Label>{t('Рынок')}</Label>
+						<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+							{markets.map((market) => {
+								const active = marketId === market.id
+								return (
+									<Pressable
+										key={market.id}
+										onPress={() => setMarketId(market.id)}
+										style={{ height: 44, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1.5, borderColor: active ? c.brand : c.border, backgroundColor: active ? c.brand : c.card, alignItems: 'center', justifyContent: 'center' }}
+									>
+										<Text style={{ fontSize: fs.md, fontFamily: fontFamily(active ? 700 : 600), color: active ? fixed.white : c.ink }}>{market.name}</Text>
+									</Pressable>
+								)
+							})}
+						</View>
+						<Label>{t('Где вы на рынке')}</Label>
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
+							value={manualPlace}
+							onChangeText={(text) => setManualPlace(text.slice(0, 60))}
+							placeholder={t('Например, ряд 5, контейнер 12')}
+							placeholderTextColor={c.fillInk}
+							style={field}
+						/>
+						<Label>{t('Название (можно не писать)')}</Label>
+						<TextInput inputAccessoryViewID={KEYBOARD_DONE}
+							value={name}
+							onChangeText={(text) => setName(text.slice(0, 60))}
+							placeholder={t('Например, Автозапчасти Нурлан')}
+							placeholderTextColor={c.fillInk}
+							style={field}
+						/>
+					</>
+				) : store ? (
 					<>
 						<Label>{t('Название')}</Label>
 						<TextInput inputAccessoryViewID={KEYBOARD_DONE}

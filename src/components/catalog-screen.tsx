@@ -19,6 +19,7 @@ import { type CatalogSort, toPartFilters, useCatalogFilters } from '@/store/useC
 import { useSession } from '@/store/useSession'
 import { useRecentSearches } from '@/store/useRecentSearches'
 import { briefPlace } from '@/lib/shop-place'
+import { MarketChips } from '@/components/market-chips'
 import { t } from '@/i18n'
 import { KEYBOARD_DONE } from '@/components/keyboard-done'
 import { requireSignIn } from '@/components/sign-in-prompt'
@@ -208,6 +209,8 @@ export function CatalogScreen() {
 					</Text>
 				</Pressable>
 			</ScrollView>
+
+			<MarketChips value={f.marketId} onChange={f.setMarket} />
 
 			<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
 				{[{ id: null, name: t('Все') }, ...(categories.data ?? [])].map((category) => {

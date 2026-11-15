@@ -14,7 +14,7 @@ type Schemas = components['schemas']
  */
 type WithTimes<T> = Omit<T, 'openFrom' | 'openTo'> & { openFrom?: string; openTo?: string }
 /** `manualPlace` — «Ряд К, конт. 5» when the row is not in the list: the shop works at once, the place is shown as text. */
-export type CreateShopBody = WithTimes<Schemas['CreateShop']> & { manualPlace?: string }
+export type CreateShopBody = WithTimes<Schemas['CreateShop']> & { manualPlace?: string; marketId?: number }
 export type UpdateShopBody = WithTimes<Schemas['UpdateShop']>
 
 export function useMyShop() {
