@@ -12,7 +12,8 @@ import { fixed, fontFamily, fs, useColors } from '@/theme'
 import { resolveUrl } from '@/lib/api'
 import { formatNumber, formatPrice, plural } from '@/lib/format'
 import { flattenPages } from '@/api/pagination'
-import { useMyParts, useMyPartsSummary } from '@/api/parts'
+import { useDeletePart, useMyParts, useMyPartsSummary } from '@/api/parts'
+import { confirmDeletePart } from '@/lib/delete-part'
 import type { MyPartItem, MyPartsFilter } from '@/api/types'
 import { usePartDraft } from '@/store/usePartDraft'
 import { t } from '@/i18n'
@@ -204,6 +205,7 @@ export default function SellerProductsScreen() {
 
 function PartRow({ part }: { part: MyPartItem }) {
 	const c = useColors()
+	const remove = useDeletePart()
 	// a video part has no photo — its poster is the thumbnail
 	const photo = resolveUrl(part.mainPhoto?.thumbUrl ?? part.mainPhoto?.url ?? part.videoPosterUrl)
 	const badge =
@@ -218,6 +220,7 @@ function PartRow({ part }: { part: MyPartItem }) {
 	return (
 		<Pressable
 			onPress={() => router.push({ pathname: '/new-part', params: { id: String(part.id) } })}
+			onLongPress={() => confirmDeletePart(() => remove.mutateAsync(part.id))}
 			style={{ flexDirection: 'row', gap: 12, borderRadius: 16, backgroundColor: c.card, padding: 10 }}
 		>
 			<View>

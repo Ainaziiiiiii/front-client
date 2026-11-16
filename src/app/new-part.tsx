@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { confirmDeletePart } from '@/lib/delete-part'
 import { useConfirmLeave } from '@/lib/use-confirm-leave'
 import { Image } from '@/components/ui/image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -13,7 +14,7 @@ import { fixed, fontFamily, fs, raw, useColors } from '@/theme'
 import { ApiError, resolveUrl } from '@/lib/api'
 import { formatNumber } from '@/lib/format'
 import { useCategories } from '@/api/directory'
-import { useMyPart, usePublishPart, useSavePart } from '@/api/parts'
+import { useDeletePart, useMyPart, usePublishPart, useSavePart } from '@/api/parts'
 import type { MediaItem, PartCondition } from '@/api/types'
 import { MAX_PART_PHOTOS, type PartDraft, partBody, usePartDraft } from '@/store/usePartDraft'
 import { t } from '@/i18n'
@@ -61,6 +62,7 @@ export default function NewPartScreen() {
 	const categories = useCategories()
 	const save = useSavePart()
 	const publish = usePublishPart()
+	const remove = useDeletePart()
 	const [pickCategory, setPickCategory] = useState(false)
 
 	// Editing: fill the draft from the server once.
@@ -119,6 +121,16 @@ export default function NewPartScreen() {
 			leave(() => goBack())
 		} catch {}
 	}
+
+	const onDelete = () =>
+		id &&
+		confirmDeletePart(
+			() => remove.mutateAsync(id),
+			() => {
+				usePartDraft.getState().reset()
+				leave(() => goBack())
+			}
+		)
 
 	const [main, second, third] = draft.photos
 	// a part filmed for the feed: its video plays here, not only its poster
@@ -443,6 +455,17 @@ export default function NewPartScreen() {
 					</View>
 					<Toggle value={draft.shipsToRegions} onChange={(on) => draft.set({ shipsToRegions: on })} />
 				</View>
+
+				{id ? (
+					<Pressable
+						accessibilityRole="button"
+						disabled={remove.isPending}
+						onPress={onDelete}
+						style={{ height: 52, borderRadius: 12, alignItems: 'center', justifyContent: 'center', opacity: remove.isPending ? 0.4 : 1 }}
+					>
+						<Text style={{ fontSize: fs.lg, fontFamily: fontFamily(700), color: c.danger }}>{t('Удалить запчасть')}</Text>
+					</Pressable>
+				) : null}
 			</ScrollView>
 			)}
 
