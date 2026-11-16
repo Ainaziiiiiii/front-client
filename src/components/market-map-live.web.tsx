@@ -10,7 +10,7 @@ import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { marketMapStyle } from '@/data/map-style'
 import { type MarketGeo, routeToGeoJSON } from '@/lib/market-geojson'
-import { ANIMATED, marketLayers, type MarketSourceId } from '@/lib/market-cell-layers'
+import { ANIMATED, CELL_BOX_IDS, marketLayers, type MarketSourceId } from '@/lib/market-cell-layers'
 import { mapPalette as palette } from '@/lib/map-palette'
 import { useMarketGeo } from '@/api/market'
 import { fs, useColors } from '@/theme'
@@ -355,14 +355,14 @@ export const MarketMapLive = forwardRef(function MarketMapLive(
 			}
 		})
 
-		map.on('click', 'market-cell-fill', (event) => {
+		map.on('click', CELL_BOX_IDS, (event) => {
 			const props = event.features?.[0]?.properties
 			if (props?.containerId) onContainerPressRef.current?.(Number(props.containerId), Number(props.shopId) || 0)
 		})
-		map.on('mouseenter', 'market-cell-fill', () => {
+		map.on('mouseenter', CELL_BOX_IDS, () => {
 			if (onContainerPressRef.current) map.getCanvas().style.cursor = 'pointer'
 		})
-		map.on('mouseleave', 'market-cell-fill', () => {
+		map.on('mouseleave', CELL_BOX_IDS, () => {
 			map.getCanvas().style.cursor = ''
 		})
 

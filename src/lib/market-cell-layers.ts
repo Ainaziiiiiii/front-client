@@ -59,6 +59,46 @@ const isShopBlock: Expr = ['in', ['get', 'kind'], ['literal', ['shop', 'anon']]]
 
 const zoomed = (stops: number[]): Expr => ['interpolate', ['exponential', 1.5], ['zoom'], ...stops]
 
+/**
+ * Коробки контейнеров — по слою на цвет, в том же порядке условий, что был у ['case', …]:
+ * выбран другой и продавец → продавец → найден фильтром → выбран другой → обычный.
+ */
+function cellBoxes(p: MapPalette): CellLayer[] {
+	const dimShop: Expr = ['all', isDim, isShop]
+	const kinds: { id: string; color: string; filter: Expr }[] = [
+		{ id: 'market-cell-fill-dim-shop', color: p.cellShopDim, filter: dimShop },
+		{ id: 'market-cell-fill-hl', color: p.cellHl, filter: ['all', isHl, ['!', dimShop]] },
+		{ id: 'market-cell-fill-shop', color: p.cellShop, filter: ['all', isShop, ['!', isHl], ['!', isDim]] },
+		{ id: 'market-cell-fill-dim', color: p.cellDim, filter: ['all', isDim, ['!', isHl], ['!', isShop]] },
+		{ id: 'market-cell-fill', color: p.cell, filter: ['all', ['!', isDim], ['!', isHl], ['!', isShop]] },
+	]
+	return kinds.map(({ id, color, filter }) => ({
+		id,
+		source: 'market-cells',
+		type: 'fill-extrusion',
+		minzoom: CELL_ZOOM,
+		filter: ['all', ['!', isTarget], filter],
+		paint: {
+			'fill-extrusion-color': color,
+			'fill-extrusion-height': [
+				'interpolate',
+				['linear'],
+				['zoom'],
+				CELL_ZOOM,
+				0,
+				CELL_ZOOM + 0.8,
+				['case', isShop, 1.55, ['+', 0.95, ['*', ['%', ['to-number', ['get', 'containerId'], 0], 5], 0.07]]],
+			],
+			'fill-extrusion-base': 0,
+			'fill-extrusion-opacity': 0.97,
+			'fill-extrusion-vertical-gradient': true,
+		},
+	}))
+}
+
+/** Все коробки контейнеров — для кликов и курсора в вебе. */
+export const CELL_BOX_IDS = ['market-cell-fill-dim-shop', 'market-cell-fill-hl', 'market-cell-fill-shop', 'market-cell-fill-dim', 'market-cell-fill']
+
 export function marketLayers(p: MapPalette = mapPalette): CellLayer[] {
 	return [
 		// ── участок рынка: тёплое пятно, светящийся контур, тонкий пунктир по краю
@@ -204,31 +244,11 @@ export function marketLayers(p: MapPalette = mapPalette): CellLayer[] {
 			layout: { 'line-join': 'round' },
 			paint: { 'line-color': p.cellShopGlow, 'line-width': zoomed([CELL_ZOOM, 0.8, 18, 1.6, 19.6, 2.4]) },
 		},
-		{
-			// невысокая коробка ~1,1 м, чуть разной высоты — номер (он на земле) остаётся почти на крыше;
-			// у продавца — голубая и чуть выше
-			id: 'market-cell-fill',
-			source: 'market-cells',
-			type: 'fill-extrusion',
-			minzoom: CELL_ZOOM,
-			filter: ['!', isTarget],
-			paint: {
-				// найденные фильтром — сплошной синий; продавцы — голубые; выбран другой — всё гаснет
-				'fill-extrusion-color': ['case', ['all', isDim, isShop], p.cellShopDim, isHl, p.cellHl, isShop, p.cellShop, isDim, p.cellDim, p.cell],
-				'fill-extrusion-height': [
-					'interpolate',
-					['linear'],
-					['zoom'],
-					CELL_ZOOM,
-					0,
-					CELL_ZOOM + 0.8,
-					['case', isShop, 1.55, ['+', 0.95, ['*', ['%', ['to-number', ['get', 'containerId'], 0], 5], 0.07]]],
-				],
-				'fill-extrusion-base': 0,
-				'fill-extrusion-opacity': 0.97,
-				'fill-extrusion-vertical-gradient': true,
-			},
-		},
+		// невысокая коробка ~1,1 м, чуть разной высоты — номер (он на земле) остаётся почти на крыше;
+		// у продавца — голубая и чуть выше. Найденные фильтром — сплошной синий; продавцы — голубые; выбран другой — всё гаснет.
+		// Цвет — отдельным слоем на каждый вид, а не одним ['case', …]: на iOS (maplibre-react-native 11.4 / MapLibre 6.31)
+		// data-driven fill-extrusion-color роняет приложение (SIGABRT в operator new) сразу при открытии карты.
+		...cellBoxes(p),
 		{
 			// найденные фильтром горят: синее сияние на любом масштабе, вблизи — вокруг синей коробки
 			id: 'market-cell-hl-glow',
